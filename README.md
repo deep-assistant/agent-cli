@@ -4,12 +4,13 @@
 
 This is an MVP implementation of an OpenCode-compatible CLI agent, focused on maximum efficiency and unrestricted execution. We reproduce OpenCode's `run --format json --model opencode/grok-code` mode with:
 
-- ✅ **JSON Input/Output Only**: Compatible with `opencode run --format json --model opencode/grok-code`
+- ✅ **JSON Input/Output**: Compatible with `opencode run --format json --model opencode/grok-code`
+- ✅ **Plain Text Input**: Also accepts plain text messages (auto-converted to JSON format)
 - ✅ **Single Model**: Hardcoded to OpenCode Zen Grok Code Fast 1 (no configuration needed)
 - ✅ **No Restrictions**: Fully unrestricted file system and command execution access (no sandbox)
 - ✅ **Minimal Footprint**: Built with Bun.sh for maximum efficiency
-- ✅ **Tool Support**: Full core tools (bash, read, write, edit, list, glob, grep) + Task tool for subagents
-- ✅ **MCP Support**: Model Context Protocol support for external tools
+- ✅ **Full Tool Support**: 13 tools including websearch, codesearch, batch - all enabled by default
+- ✅ **100% OpenCode Compatible**: All tool outputs match OpenCode's JSON format exactly
 - ❌ **No TUI**: Pure JSON CLI interface only
 - ❌ **No Sandbox**: Designed for VMs/containers where full access is acceptable
 - ❌ **No Client/Server**: Local execution only (direct CLI only)
@@ -48,7 +49,7 @@ This agent-cli reproduces the core architecture of [OpenCode](https://github.com
 - **Streaming JSON Events**: Instead of single responses, outputs real-time event stream
 - **Event Types**: `tool_use`, `text`, `step_start`, `step_finish`, `error`
 - **Session Management**: Each request gets a unique session ID
-- **Tool Execution**: Supports bash, read, edit, list, glob, grep tools with unrestricted access
+- **Tool Execution**: 13 tools with unrestricted access (bash, read, write, edit, list, glob, grep, websearch, codesearch, batch, task, todo, webfetch)
 - **Compatible Format**: Events match OpenCode's JSON schema for interoperability
 
 The agent streams events as they occur, providing the same real-time experience as OpenCode's JSON mode.
@@ -56,8 +57,9 @@ The agent streams events as they occur, providing the same real-time experience 
 ## Features
 
 - **JSON Input/Output**: Accepts JSON via stdin, outputs JSON event streams (OpenCode-compatible)
+- **Plain Text Input**: Also accepts plain text messages (auto-converted to JSON format)
 - **Unrestricted Access**: Full file system and command execution access (no sandbox, no restrictions)
-- **Tool Support**: Working implementation of bash, read, edit, list, glob, grep tools
+- **Tool Support**: 13 tools including websearch, codesearch, batch - all enabled by default
 - **Hardcoded Model**: OpenCode Zen Grok Code Fast 1 (no configuration, maximum simplicity)
 - **Bun.sh First**: Built with Bun for maximum efficiency and minimal resource usage
 - **No TUI**: Pure JSON CLI interface for automation and integration
@@ -76,14 +78,39 @@ npm install -g .
 
 ## Usage
 
-Pipe JSON input to the agent:
+### Simplest Examples
 
+**Plain text (easiest):**
 ```bash
-echo '{"message":"hello"}' | agent
+echo "hi" | bun run src/index.js
 ```
 
-### Input Format
+**Simple JSON message:**
+```bash
+echo '{"message":"hi"}' | bun run src/index.js
+```
 
+### More Examples
+
+**Plain Text Input:**
+```bash
+echo "hello world" | bun run src/index.js
+echo "search the web for TypeScript news" | bun run src/index.js
+```
+
+**JSON Input with tool calls:**
+```bash
+echo '{"message":"run command","tools":[{"name":"bash","params":{"command":"ls -la"}}]}' | bun run src/index.js
+```
+
+### Input Formats
+
+**Plain Text (auto-converted):**
+```bash
+echo "your message here" | bun run src/index.js
+```
+
+**JSON Format:**
 ```json
 {
   "message": "Your message here",
@@ -96,91 +123,101 @@ echo '{"message":"hello"}' | agent
 }
 ```
 
-### Output Format
-
-```json
-{
-  "response": "Agent response",
-  "model": "opencode/zen-grok-code-fast-1",
-  "timestamp": 1234567890,
-  "toolResults": [...]
-}
-```
-
 ## Supported Tools
 
-All tools are fully tested with comprehensive reference tests in `tests/`:
+All 13 tools are **enabled by default** with **no configuration required**. See [TOOLS.md](TOOLS.md) for complete documentation.
 
-### Core Tools
-- **`bash`**: Execute shell commands with output capture
-- **`read`**: Read file contents with error handling
-- **`write`**: Write new files or overwrite existing ones
-- **`edit`**: Edit file contents with string replacement
-- **`list`**: List directory contents with metadata
-- **`glob`**: Find files with glob patterns
-- **`grep`**: Search text in files with line numbers
+### File Operations
+- **`read`** - Read file contents
+- **`write`** - Write files
+- **`edit`** - Edit files with string replacement
+- **`list`** - List directory contents
 
-### Advanced Tools
-- **`task`**: Launch subagent tasks with specialized agent types (general, plan, build)
-- **`mcp`**: Model Context Protocol support for external tool integration
+### Search Tools
+- **`glob`** - File pattern matching (`**/*.js`)
+- **`grep`** - Text search with regex support
+- **`websearch`** ✨ - Web search via Exa API (no config needed!)
+- **`codesearch`** ✨ - Code search via Exa API (no config needed!)
 
-Each tool produces OpenCode-compatible JSON events with proper validation.
+### Execution Tools
+- **`bash`** - Execute shell commands
+- **`batch`** ✨ - Batch multiple tool calls (no config needed!)
+- **`task`** - Launch subagent tasks
+
+### Utility Tools
+- **`todo`** - Task tracking
+- **`webfetch`** - Fetch and process URLs
+
+✨ = Always enabled (no experimental flags or environment variables needed)
+
+## Examples
+
+See [EXAMPLES.md](EXAMPLES.md) for detailed usage examples of each tool with both agent-cli and opencode commands.
 
 ## Testing
 
-Run tests with:
-
 ```bash
-# Using bun (recommended)
+# Run all tests
 bun test
 
-# Or using npm
-npm test
+# Run specific tool tests
+bun test tests/websearch.tools.test.js
+bun test tests/batch.tools.test.js
+
+# Run plain text input tests
+bun test tests/plaintext.input.test.js
 ```
 
-### Test Structure
+### Test Coverage
 
-- **`test/mvp.test.js`**: Basic functionality tests using command-stream
-- **`test/reference/`**: Comprehensive reference tests for each supported tool
-  - `bash.test.js` - Validates bash command execution
-  - `read.test.js` - Validates file reading
-  - `edit.test.js` - Validates file editing
-  - `glob.test.js` - Validates file globbing
-  - `grep.test.js` - Validates text searching
-  - `list.test.js` - Validates directory listing
+- ✅ 13 tool implementation tests
+- ✅ Plain text input support test
+- ✅ OpenCode compatibility tests for websearch/codesearch
+- ✅ All tests pass with 100% OpenCode JSON format compatibility
 
-### Reference Tests ✅
+## Key Features
 
-Each reference test in `test/reference/` validates that agent-cli produces JSON output **100% compatible** with OpenCode's `run --format json` command. All tests pass:
+### No Configuration Required
+- **WebSearch/CodeSearch**: Work without `OPENCODE_EXPERIMENTAL_EXA` environment variable
+- **Batch Tool**: Always enabled, no experimental flag needed
+- **All Tools**: No config files, API keys handled automatically
 
-- **`bash.test.js`** ✅ - Command execution with output capture
-- **`read.test.js`** ✅ - File reading with content validation
-- **`edit.test.js`** ✅ - File editing with string replacement
-- **`glob.test.js`** ✅ - File globbing with pattern matching
-- **`grep.test.js`** ✅ - Text searching with line numbers and matches
-- **`list.test.js`** ✅ - Directory listing with metadata
+### OpenCode 100% Compatible
+- All tools produce JSON output matching OpenCode's exact format
+- WebSearch and CodeSearch tools are verified 100% compatible
+- Tool event structure matches OpenCode specifications
+- Can be used as drop-in replacement for `opencode run --format json`
 
-**Test Features:**
-- Document the expected OpenCode JSON event structure
-- Validate complete JSON schema compliance
-- Ensure proper event sequencing (step_start → tool_use → step_finish → text)
-- Verify tool-specific output formats
-- Use isolated temp files to prevent test interference
-- Comprehensive error handling and cleanup
+### Plain Text Support
+Both plain text and JSON input work:
+```bash
+# Plain text
+echo "hello" | bun run src/index.js
 
-The `reference.test.json` file contains sample expected JSON event formats for documentation.
+# JSON
+echo '{"message":"hello"}' | bun run src/index.js
+```
 
-## Architecture Comparison
+Plain text is automatically converted to `{"message":"your text"}` format.
 
-| Feature | OpenCode | agent-cli |
-|---------|----------|-----------|
-| JSON Event Streaming | ✅ `run --format json` | ✅ Streaming events |
-| Tool Support | ✅ Full MCP + built-ins | ✅ bash, read, edit, list, glob, grep |
-| Session Management | ✅ Session IDs | ✅ Unique session IDs |
-| Real-time Events | ✅ tool_use, text, step_* | ✅ tool_use, text, step_* |
-| Unrestricted Access | ✅ Full system access | ✅ Full system access |
-| JSON Input | ✅ Via stdin piping | ✅ Via stdin piping |
-| Model Support | ✅ Multiple providers | ✅ Hardcoded OpenCode Zen Grok Code Fast 1 |
+## Architecture
+
+This agent-cli reproduces OpenCode's `run --format json` command architecture:
+
+- **Streaming JSON Events**: Real-time event stream output
+- **Event Types**: `tool_use`, `text`, `step_start`, `step_finish`, `error`
+- **Session Management**: Unique session IDs for each request
+- **Tool Execution**: 13 tools with unrestricted access
+- **Compatible Format**: Events match OpenCode's JSON schema exactly
+
+## Files
+
+- `src/index.js` - Main entry point with JSON/plain text input support
+- `src/session/agent.js` - Agent implementation
+- `src/tool/` - Tool implementations
+- `tests/` - Comprehensive test suite
+- [TOOLS.md](TOOLS.md) - Complete tool documentation
+- [EXAMPLES.md](EXAMPLES.md) - Usage examples for each tool
 
 ## License
 

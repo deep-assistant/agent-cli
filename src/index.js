@@ -26,9 +26,20 @@ async function main() {
       level: 'INFO'
     })
 
-    // Read JSON from stdin
+    // Read input from stdin
     const input = await readStdin()
-    const request = JSON.parse(input.trim())
+    const trimmedInput = input.trim()
+
+    // Try to parse as JSON, if it fails treat it as plain text message
+    let request
+    try {
+      request = JSON.parse(trimmedInput)
+    } catch (e) {
+      // Not JSON, treat as plain text message
+      request = {
+        message: trimmedInput
+      }
+    }
 
     // Wrap in Instance.provide for OpenCode infrastructure
     await Instance.provide({
