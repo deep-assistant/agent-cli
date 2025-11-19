@@ -13,9 +13,6 @@ import { Flag } from "../flag/flag"
 import { Auth } from "../auth"
 import { type ParseError as JsoncParseError, parse as parseJsonc, printParseErrorCode } from "jsonc-parser"
 import { Instance } from "../project/instance"
-// LSP not supported in agent-cli
-import { BunProc } from "@/bun"
-import { Installation } from "@/installation"
 import { ConfigMarkdown } from "./markdown"
 
 export namespace Config {
@@ -53,7 +50,6 @@ export namespace Config {
 
     result.agent = result.agent || {}
     result.mode = result.mode || {}
-    result.plugin = result.plugin || []
 
     const directories = [
       Global.Path.config,
@@ -82,7 +78,6 @@ export namespace Config {
           // to satisy the type checker
           result.agent ??= {}
           result.mode ??= {}
-          result.plugin ??= []
         }
       }
 
@@ -90,7 +85,6 @@ export namespace Config {
       result.command = mergeDeep(result.command ?? {}, await loadCommand(dir))
       result.agent = mergeDeep(result.agent, await loadAgent(dir))
       result.agent = mergeDeep(result.agent, await loadMode(dir))
-      result.plugin.push(...(await loadPlugin(dir)))
     }
     await Promise.allSettled(promises)
 
@@ -105,18 +99,9 @@ export namespace Config {
     }
 
     // Permission system removed
+    // Share/autoshare removed - no sharing support
 
     if (!result.username) result.username = os.userInfo().username
-
-    // Handle migration from autoshare to share field
-    if (result.autoshare === true && !result.share) {
-      result.share = "auto"
-    }
-
-    // Handle migration from autoshare to share field
-    if (result.autoshare === true && !result.share) {
-      result.share = "auto"
-    }
 
     if (!result.keybinds) result.keybinds = Info.shape.keybinds.parse({})
 
@@ -126,7 +111,7 @@ export namespace Config {
     }
   })
 
-  const INVALID_DIRS = new Bun.Glob(`{${["agents", "commands", "plugins", "tools"].join(",")}}/`)
+  const INVALID_DIRS = new Bun.Glob(`{${["agents", "commands", "tools"].join(",")}}/`)
   async function assertValid(dir: string) {
     const invalid = await Array.fromAsync(
       INVALID_DIRS.scan({
@@ -144,24 +129,7 @@ export namespace Config {
   }
 
   async function installDependencies(dir: string) {
-    if (Installation.isLocal()) return
-
-    const pkg = path.join(dir, "package.json")
-
-    if (!(await Bun.file(pkg).exists())) {
-      await Bun.write(pkg, "{}")
-    }
-
-    const gitignore = path.join(dir, ".gitignore")
-    const hasGitIgnore = await Bun.file(gitignore).exists()
-    if (!hasGitIgnore) await Bun.write(gitignore, ["node_modules", "package.json", "bun.lock", ".gitignore"].join("\n"))
-
-    await BunProc.run(
-      ["add", "@opencode-ai/plugin@" + (Installation.isLocal() ? "latest" : Installation.VERSION), "--exact"],
-      {
-        cwd: dir,
-      },
-    ).catch(() => {})
+    // Dependency installation removed - no plugin support
   }
 
   const COMMAND_GLOB = new Bun.Glob("command/**/*.md")
@@ -274,21 +242,6 @@ export namespace Config {
     return result
   }
 
-  const PLUGIN_GLOB = new Bun.Glob("plugin/*.{ts,js}")
-  async function loadPlugin(dir: string) {
-    const plugins: string[] = []
-
-    for await (const item of PLUGIN_GLOB.scan({
-      absolute: true,
-      followSymlinks: true,
-      dot: true,
-      cwd: dir,
-    })) {
-      plugins.push("file://" + item)
-    }
-    return plugins
-  }
-
   export const McpLocal = z
     .object({
       type: z.literal("local").describe("Type of MCP server connection"),
@@ -390,8 +343,6 @@ export namespace Config {
       session_new: z.string().optional().default("<leader>n").describe("Create a new session"),
       session_list: z.string().optional().default("<leader>l").describe("List all sessions"),
       session_timeline: z.string().optional().default("<leader>g").describe("Show session timeline"),
-      session_share: z.string().optional().default("none").describe("Share current session"),
-      session_unshare: z.string().optional().default("none").describe("Unshare current session"),
       session_interrupt: z.string().optional().default("escape").describe("Interrupt current session"),
       session_compact: z.string().optional().default("<leader>c").describe("Compact the session"),
       messages_page_up: z.string().optional().default("pageup").describe("Scroll messages up by one page"),
@@ -464,18 +415,8 @@ export namespace Config {
           ignore: z.array(z.string()).optional(),
         })
         .optional(),
-      plugin: z.string().array().optional(),
       snapshot: z.boolean().optional(),
-      share: z
-        .enum(["manual", "auto", "disabled"])
-        .optional()
-        .describe(
-          "Control sharing behavior:'manual' allows manual sharing via commands, 'auto' enables automatic sharing, 'disabled' disables all sharing",
-        ),
-      autoshare: z
-        .boolean()
-        .optional()
-        .describe("@deprecated Use 'share' field instead. Share newly created sessions automatically"),
+      // share and autoshare fields removed - no sharing support
       autoupdate: z.boolean().optional().describe("Automatically update to the latest version"),
       disabled_providers: z.array(z.string()).optional().describe("Disable providers that are loaded automatically"),
       model: z.string().describe("Model to use in the format of provider/model, eg anthropic/claude-2").optional(),
@@ -553,42 +494,6 @@ export namespace Config {
           ),
         ])
         .optional(),
-      lsp: z
-        .union([
-          z.literal(false),
-          z.record(
-            z.string(),
-            z.union([
-              z.object({
-                disabled: z.literal(true),
-              }),
-              z.object({
-                command: z.array(z.string()),
-                extensions: z.array(z.string()).optional(),
-                disabled: z.boolean().optional(),
-                env: z.record(z.string(), z.string()).optional(),
-                initialization: z.record(z.string(), z.any()).optional(),
-              }),
-            ]),
-          ),
-        ])
-        .optional()
-        .refine(
-          (data) => {
-            if (!data) return true
-            if (typeof data === "boolean") return true
-            const serverIds = new Set(Object.values(LSPServer).map((s) => s.id))
-
-            return Object.entries(data).every(([id, config]) => {
-              if (config.disabled) return true
-              if (serverIds.has(id)) return true
-              return Boolean(config.extensions)
-            })
-          },
-          {
-            error: "For custom LSP servers, 'extensions' array is required.",
-          },
-        ),
       instructions: z.array(z.string()).optional().describe("Additional instruction files or patterns to include"),
       layout: Layout.optional().describe("@deprecated Always uses stretch layout."),
       permission: z
@@ -749,14 +654,6 @@ export namespace Config {
         await Bun.write(configFilepath, JSON.stringify(parsed.data, null, 2))
       }
       const data = parsed.data
-      if (data.plugin) {
-        for (let i = 0; i < data.plugin.length; i++) {
-          const plugin = data.plugin[i]
-          try {
-            data.plugin[i] = import.meta.resolve!(plugin, configFilepath)
-          } catch (err) {}
-        }
-      }
       return data
     }
 

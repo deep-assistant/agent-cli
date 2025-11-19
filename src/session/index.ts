@@ -5,9 +5,7 @@ import { Bus } from "../bus"
 import { Config } from "../config/config"
 import { Flag } from "../flag/flag"
 import { Identifier } from "../id/id"
-import { Installation } from "../installation"
 import type { ModelsDev } from "../provider/models"
-import { Share } from "../share/share"
 import { Storage } from "../storage/storage"
 import { Log } from "../util/log"
 import { MessageV2 } from "./message-v2"
@@ -47,11 +45,7 @@ export namespace Session {
           diffs: Snapshot.FileDiff.array().optional(),
         })
         .optional(),
-      share: z
-        .object({
-          url: z.string(),
-        })
-        .optional(),
+      // share field removed - no sharing support
       title: z.string(),
       version: z.string(),
       time: z.object({
@@ -73,15 +67,7 @@ export namespace Session {
     })
   export type Info = z.output<typeof Info>
 
-  export const ShareInfo = z
-    .object({
-      secret: z.string(),
-      url: z.string(),
-    })
-    .meta({
-      ref: "SessionShare",
-    })
-  export type ShareInfo = z.output<typeof ShareInfo>
+  // ShareInfo removed - share not supported
 
   export const Event = {
     Created: Bus.event(
@@ -174,7 +160,7 @@ export namespace Session {
   export async function createNext(input: { id?: string; title?: string; parentID?: string; directory: string }) {
     const result: Info = {
       id: Identifier.descending("session", input.id),
-      version: Installation.VERSION,
+      version: "agent-cli-1.0.0",
       projectID: Instance.project.id,
       directory: input.directory,
       parentID: input.parentID,
@@ -189,17 +175,7 @@ export namespace Session {
     Bus.publish(Event.Created, {
       info: result,
     })
-    const cfg = await Config.get()
-    if (!result.parentID && (Flag.OPENCODE_AUTO_SHARE || cfg.share === "auto"))
-      share(result.id)
-        .then((share) => {
-          update(result.id, (draft) => {
-            draft.share = share
-          })
-        })
-        .catch(() => {
-          // Silently ignore sharing errors during session creation
-        })
+    // Share not supported - removed auto-sharing
     Bus.publish(Event.Updated, {
       info: result,
     })
@@ -211,44 +187,7 @@ export namespace Session {
     return read as Info
   })
 
-  export const getShare = fn(Identifier.schema("session"), async (id) => {
-    return Storage.read<ShareInfo>(["share", id])
-  })
-
-  export const share = fn(Identifier.schema("session"), async (id) => {
-    const cfg = await Config.get()
-    if (cfg.share === "disabled") {
-      throw new Error("Sharing is disabled in configuration")
-    }
-
-    const session = await get(id)
-    if (session.share) return session.share
-    const share = await Share.create(id)
-    await update(id, (draft) => {
-      draft.share = {
-        url: share.url,
-      }
-    })
-    await Storage.write(["share", id], share)
-    await Share.sync("session/info/" + id, session)
-    for (const msg of await messages({ sessionID: id })) {
-      await Share.sync("session/message/" + id + "/" + msg.info.id, msg.info)
-      for (const part of msg.parts) {
-        await Share.sync("session/part/" + id + "/" + msg.info.id + "/" + part.id, part)
-      }
-    }
-    return share
-  })
-
-  export const unshare = fn(Identifier.schema("session"), async (id) => {
-    const share = await getShare(id)
-    if (!share) return
-    await Storage.remove(["share", id])
-    await update(id, (draft) => {
-      draft.share = undefined
-    })
-    await Share.remove(id, share.secret)
-  })
+  // getShare, share, unshare removed - share not supported
 
   export async function update(id: string, editor: (session: Info) => void) {
     const project = Instance.project
@@ -308,7 +247,7 @@ export namespace Session {
       for (const child of await children(sessionID)) {
         await remove(child.id)
       }
-      await unshare(sessionID).catch(() => {})
+      // unshare removed - share not supported
       for (const msg of await Storage.list(["message", sessionID])) {
         for (const part of await Storage.list(["part", msg.at(-1)!])) {
           await Storage.remove(part)

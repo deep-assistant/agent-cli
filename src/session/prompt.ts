@@ -24,7 +24,6 @@ import { Instance } from "../project/instance"
 import { Bus } from "../bus"
 import { ProviderTransform } from "../provider/transform"
 import { SystemPrompt } from "./system"
-import { Plugin } from "../plugin"
 
 import PROMPT_PLAN from "../session/prompt/plan.txt"
 import BUILD_SWITCH from "../session/prompt/build-switch.txt"
@@ -33,7 +32,6 @@ import { mergeDeep, pipe } from "remeda"
 import { ToolRegistry } from "../tool/registry"
 import { Wildcard } from "../util/wildcard"
 import { MCP } from "../mcp"
-import { LSP } from "../lsp"
 import { ReadTool } from "../tool/read"
 import { ListTool } from "../tool/ls"
 import { FileTime } from "../file/time"
@@ -465,27 +463,17 @@ export namespace SessionPrompt {
         tools: lastUser.tools,
         processor,
       })
-      const params = await Plugin.trigger(
-        "chat.params",
-        {
-          sessionID: sessionID,
-          agent: lastUser.agent,
-          model: model.info,
-          provider: await Provider.getProvider(model.providerID),
-          message: lastUser,
+      const params = {
+        temperature: model.info.temperature
+          ? (agent.temperature ?? ProviderTransform.temperature(model.providerID, model.modelID))
+          : undefined,
+        topP: agent.topP ?? ProviderTransform.topP(model.providerID, model.modelID),
+        options: {
+          ...ProviderTransform.options(model.providerID, model.modelID, model.npm ?? "", sessionID),
+          ...model.info.options,
+          ...agent.options,
         },
-        {
-          temperature: model.info.temperature
-            ? (agent.temperature ?? ProviderTransform.temperature(model.providerID, model.modelID))
-            : undefined,
-          topP: agent.topP ?? ProviderTransform.topP(model.providerID, model.modelID),
-          options: {
-            ...ProviderTransform.options(model.providerID, model.modelID, model.npm ?? "", sessionID),
-            ...model.info.options,
-            ...agent.options,
-          },
-        },
-      )
+      }
 
       if (step === 1) {
         SessionSummary.summarize({
@@ -660,17 +648,6 @@ export namespace SessionPrompt {
         description: item.description,
         inputSchema: jsonSchema(schema as any),
         async execute(args, options) {
-          await Plugin.trigger(
-            "tool.execute.before",
-            {
-              tool: item.id,
-              sessionID: input.sessionID,
-              callID: options.toolCallId,
-            },
-            {
-              args,
-            },
-          )
           const result = await item.execute(args, {
             sessionID: input.sessionID,
             abort: options.abortSignal!,
@@ -696,15 +673,6 @@ export namespace SessionPrompt {
               }
             },
           })
-          await Plugin.trigger(
-            "tool.execute.after",
-            {
-              tool: item.id,
-              sessionID: input.sessionID,
-              callID: options.toolCallId,
-            },
-            result,
-          )
           return result
         },
         toModelOutput(result) {
@@ -721,28 +689,7 @@ export namespace SessionPrompt {
       const execute = item.execute
       if (!execute) continue
       item.execute = async (args, opts) => {
-        await Plugin.trigger(
-          "tool.execute.before",
-          {
-            tool: key,
-            sessionID: input.sessionID,
-            callID: opts.toolCallId,
-          },
-          {
-            args,
-          },
-        )
         const result = await execute(args, opts)
-
-        await Plugin.trigger(
-          "tool.execute.after",
-          {
-            tool: key,
-            sessionID: input.sessionID,
-            callID: opts.toolCallId,
-          },
-          result,
-        )
 
         const textParts: string[] = []
         const attachments: MessageV2.FilePart[] = []
@@ -855,25 +802,6 @@ export namespace SessionPrompt {
                   const filePathURI = part.url.split("?")[0]
                   let start = parseInt(range.start)
                   let end = range.end ? parseInt(range.end) : undefined
-                  // some LSP servers (eg, gopls) don't give full range in
-                  // workspace/symbol searches, so we'll try to find the
-                  // symbol in the document to get the full range
-                  if (start === end) {
-                    const symbols = await LSP.documentSymbol(filePathURI)
-                    for (const symbol of symbols) {
-                      let range: LSP.Range | undefined
-                      if ("range" in symbol) {
-                        range = symbol.range
-                      } else if ("location" in symbol) {
-                        range = symbol.location.range
-                      }
-                      if (range?.start?.line && range?.start?.line === start) {
-                        start = range.start.line
-                        end = range?.end?.line ?? start
-                        break
-                      }
-                    }
-                  }
                   offset = Math.max(start - 1, 0)
                   if (end) {
                     limit = end - offset
@@ -1035,20 +963,6 @@ export namespace SessionPrompt {
         ]
       }),
     ).then((x) => x.flat())
-
-    await Plugin.trigger(
-      "chat.message",
-      {
-        sessionID: input.sessionID,
-        agent: input.agent,
-        model: input.model,
-        messageID: input.messageID,
-      },
-      {
-        message: info,
-        parts,
-      },
-    )
 
     await Session.updateMessage(info)
     for (const part of parts) {

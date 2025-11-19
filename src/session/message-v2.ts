@@ -4,7 +4,6 @@ import { NamedError } from "../util/error"
 import { Message } from "./message"
 import { APICallError, convertToModelMessages, LoadAPIKeyError, type ModelMessage, type UIMessage } from "ai"
 import { Identifier } from "../id/id"
-import { LSP } from "../lsp"
 import { Snapshot } from "@/snapshot"
 import { fn } from "@/util/fn"
 import { Storage } from "@/storage/storage"
@@ -105,7 +104,10 @@ export namespace MessageV2 {
   export const SymbolSource = FilePartSourceBase.extend({
     type: z.literal("symbol"),
     path: z.string(),
-    range: LSP.Range,
+    range: z.object({
+      start: z.object({ line: z.number(), character: z.number() }),
+      end: z.object({ line: z.number(), character: z.number() }),
+    }),
     name: z.string(),
     kind: z.number().int(),
   }).meta({

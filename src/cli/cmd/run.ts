@@ -8,7 +8,6 @@ import { Command } from "../../command"
 import { EOL } from "os"
 import { select } from "@clack/prompts"
 import { createOpencodeClient, type OpencodeClient } from "@opencode-ai/sdk"
-import { Server } from "../../server/server"
 import { Provider } from "../../provider/provider"
 
 const TOOL: Record<string, [string, string]> = {
@@ -48,10 +47,6 @@ export const RunCommand = cmd({
         alias: ["s"],
         describe: "session id to continue",
         type: "string",
-      })
-      .option("share", {
-        type: "boolean",
-        describe: "share the session",
       })
       .option("model", {
         type: "string",
@@ -272,25 +267,14 @@ export const RunCommand = cmd({
         process.exit(1)
       }
 
-      const cfgResult = await sdk.config.get()
-      if (cfgResult.data && (cfgResult.data.share === "auto" || Flag.OPENCODE_AUTO_SHARE || args.share)) {
-        const shareResult = await sdk.session.share({ path: { id: sessionID } }).catch((error) => {
-          if (error instanceof Error && error.message.includes("disabled")) {
-            UI.println(UI.Style.TEXT_DANGER_BOLD + "!  " + error.message)
-          }
-          return { error }
-        })
-        if (!shareResult.error) {
-          UI.println(UI.Style.TEXT_INFO_BOLD + "~  https://opencode.ai/s/" + sessionID.slice(-8))
-        }
-      }
+      // Share not supported - removed auto-share logic
 
       return await execute(sdk, sessionID)
     }
 
     await bootstrap(process.cwd(), async () => {
-      const server = Server.listen({ port: args.port ?? 0, hostname: "127.0.0.1" })
-      const sdk = createOpencodeClient({ baseUrl: `http://${server.hostname}:${server.port}` })
+      // Server not supported - this code path should not be reached
+      throw new Error("Server mode not supported in agent-cli")
 
       if (args.command) {
         const exists = await Command.get(args.command)
@@ -325,18 +309,7 @@ export const RunCommand = cmd({
         process.exit(1)
       }
 
-      const cfgResult = await sdk.config.get()
-      if (cfgResult.data && (cfgResult.data.share === "auto" || Flag.OPENCODE_AUTO_SHARE || args.share)) {
-        const shareResult = await sdk.session.share({ path: { id: sessionID } }).catch((error) => {
-          if (error instanceof Error && error.message.includes("disabled")) {
-            UI.println(UI.Style.TEXT_DANGER_BOLD + "!  " + error.message)
-          }
-          return { error }
-        })
-        if (!shareResult.error) {
-          UI.println(UI.Style.TEXT_INFO_BOLD + "~  https://opencode.ai/s/" + sessionID.slice(-8))
-        }
-      }
+      // Share not supported - removed auto-share logic
 
       await execute(sdk, sessionID)
       server.stop()

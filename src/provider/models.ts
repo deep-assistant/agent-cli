@@ -3,7 +3,6 @@ import { Log } from "../util/log"
 import path from "path"
 import z from "zod"
 import { data } from "./models-macro" with { type: "macro" }
-import { Installation } from "../installation"
 
 export namespace ModelsDev {
   const log = Log.create({ service: "models.dev" })
@@ -84,7 +83,7 @@ export namespace ModelsDev {
     })
     const result = await fetch("https://models.dev/api.json", {
       headers: {
-        "User-Agent": Installation.USER_AGENT,
+        "User-Agent": "agent-cli/1.0.0",
       },
       signal: AbortSignal.timeout(10 * 1000),
     }).catch((e) => {
