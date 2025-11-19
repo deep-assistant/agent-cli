@@ -1,15 +1,11 @@
-// Mock lazy for MVP
-export function lazy<T>(fn: () => Promise<T>): () => Promise<T> {
-  let cached: T | undefined
-  let promise: Promise<T> | undefined
-  return () => {
-    if (cached) return Promise.resolve(cached)
-    if (promise) return promise
-    promise = fn().then(result => {
-      cached = result
-      promise = undefined
-      return result
-    })
-    return promise
+export function lazy<T>(fn: () => T) {
+  let value: T | undefined
+  let loaded = false
+
+  return (): T => {
+    if (loaded) return value as T
+    loaded = true
+    value = fn()
+    return value as T
   }
 }

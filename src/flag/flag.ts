@@ -1,0 +1,24 @@
+export namespace Flag {
+  export const OPENCODE_AUTO_SHARE = truthy("OPENCODE_AUTO_SHARE")
+  export const OPENCODE_CONFIG = process.env["OPENCODE_CONFIG"]
+  export const OPENCODE_CONFIG_DIR = process.env["OPENCODE_CONFIG_DIR"]
+  export const OPENCODE_CONFIG_CONTENT = process.env["OPENCODE_CONFIG_CONTENT"]
+  export const OPENCODE_DISABLE_AUTOUPDATE = truthy("OPENCODE_DISABLE_AUTOUPDATE")
+  export const OPENCODE_DISABLE_PRUNE = truthy("OPENCODE_DISABLE_PRUNE")
+  // OPENCODE_PERMISSION removed - no permission system
+  export const OPENCODE_DISABLE_DEFAULT_PLUGINS = truthy("OPENCODE_DISABLE_DEFAULT_PLUGINS")
+  export const OPENCODE_DISABLE_LSP_DOWNLOAD = truthy("OPENCODE_DISABLE_LSP_DOWNLOAD")
+  export const OPENCODE_ENABLE_EXPERIMENTAL_MODELS = truthy("OPENCODE_ENABLE_EXPERIMENTAL_MODELS")
+  export const OPENCODE_DISABLE_AUTOCOMPACT = truthy("OPENCODE_DISABLE_AUTOCOMPACT")
+  // OPENCODE_FAKE_VCS removed - not needed
+
+  // Experimental
+  export const OPENCODE_EXPERIMENTAL = truthy("OPENCODE_EXPERIMENTAL")
+  export const OPENCODE_EXPERIMENTAL_WATCHER = OPENCODE_EXPERIMENTAL || truthy("OPENCODE_EXPERIMENTAL_WATCHER")
+  export const OPENCODE_EXPERIMENTAL_EXA = OPENCODE_EXPERIMENTAL || truthy("OPENCODE_EXPERIMENTAL_EXA")
+
+  function truthy(key: string) {
+    const value = process.env[key]?.toLowerCase()
+    return value === "true" || value === "1"
+  }
+}

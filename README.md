@@ -8,13 +8,18 @@ This is an MVP implementation of an OpenCode-compatible CLI agent, focused on ma
 - ✅ **Single Model**: Hardcoded to OpenCode Zen Grok Code Fast 1 (no configuration needed)
 - ✅ **No Restrictions**: Fully unrestricted file system and command execution access (no sandbox)
 - ✅ **Minimal Footprint**: Built with Bun.sh for maximum efficiency
-- ✅ **Tool Support**: Working on implementing core tools (bash, read, edit, list, glob, grep)
+- ✅ **Tool Support**: Full core tools (bash, read, write, edit, list, glob, grep) + Task tool for subagents
+- ✅ **MCP Support**: Model Context Protocol support for external tools
 - ❌ **No TUI**: Pure JSON CLI interface only
-- ❌ **No MCP**: No MCP server support
 - ❌ **No Sandbox**: Designed for VMs/containers where full access is acceptable
-- ❌ **No Client/Server**: Local execution only
+- ❌ **No Client/Server**: Local execution only (direct CLI only)
 - ❌ **No LSP**: No Language Server Protocol support for diagnostics
 - ❌ **No Permissions**: No permission system - full unrestricted access
+- ❌ **No IDE Integration**: No IDE/editor integration features
+- ❌ **No Plugins**: No plugin system
+- ❌ **No Share**: No session sharing functionality
+- ❌ **No Web Server**: No HTTP server mode
+- ❌ **No ACP**: No Agent Client Protocol support
 
 ## Project Vision
 
@@ -104,14 +109,20 @@ echo '{"message":"hello"}' | agent
 
 ## Supported Tools
 
-All tools are fully tested with comprehensive reference tests in `test/reference/`:
+All tools are fully tested with comprehensive reference tests in `tests/`:
 
+### Core Tools
 - **`bash`**: Execute shell commands with output capture
 - **`read`**: Read file contents with error handling
+- **`write`**: Write new files or overwrite existing ones
 - **`edit`**: Edit file contents with string replacement
 - **`list`**: List directory contents with metadata
 - **`glob`**: Find files with glob patterns
 - **`grep`**: Search text in files with line numbers
+
+### Advanced Tools
+- **`task`**: Launch subagent tasks with specialized agent types (general, plan, build)
+- **`mcp`**: Model Context Protocol support for external tool integration
 
 Each tool produces OpenCode-compatible JSON events with proper validation.
 

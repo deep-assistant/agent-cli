@@ -1,10 +1,12 @@
-// Mock defer for MVP
-export function defer<T>() {
-  let resolve!: (value: T) => void
-  let reject!: (reason?: any) => void
-  const promise = new Promise<T>((res, rej) => {
-    resolve = res
-    reject = rej
-  })
-  return { promise, resolve, reject }
+export function defer<T extends () => void | Promise<void>>(
+  fn: T,
+): T extends () => Promise<void> ? { [Symbol.asyncDispose]: () => Promise<void> } : { [Symbol.dispose]: () => void } {
+  return {
+    [Symbol.dispose]() {
+      fn()
+    },
+    [Symbol.asyncDispose]() {
+      return Promise.resolve(fn())
+    },
+  } as any
 }

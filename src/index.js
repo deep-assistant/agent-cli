@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { Agent } from './session/agent.js'
+import { Instance } from './project/instance.ts'
 
 async function readStdin() {
   return new Promise((resolve, reject) => {
@@ -21,9 +22,15 @@ async function main() {
     const input = await readStdin()
     const request = JSON.parse(input.trim())
 
-    // Create agent and process request (events are emitted during processing)
-    const agent = new Agent()
-    await agent.process(request)
+    // Wrap in Instance.provide for OpenCode infrastructure
+    await Instance.provide({
+      directory: process.cwd(),
+      fn: async () => {
+        // Create agent and process request (events are emitted during processing)
+        const agent = new Agent()
+        await agent.process(request)
+      }
+    })
 
     // No final output since we stream events
     // Explicitly exit to ensure process terminates

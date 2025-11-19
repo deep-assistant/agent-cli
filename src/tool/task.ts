@@ -40,8 +40,19 @@ export const TaskTool = Tool.define("task", async () => {
           title: params.description + ` (@${agent.name} subagent)`,
         })
       })
-      const msg = await MessageV2.get({ sessionID: ctx.sessionID, messageID: ctx.messageID })
-      if (msg.info.role !== "assistant") throw new Error("Not an assistant message")
+      // Try to get parent message for model info, but use defaults if not available
+      let parentModel: { modelID: string; providerID: string } | undefined
+      try {
+        const msg = await MessageV2.get({ sessionID: ctx.sessionID, messageID: ctx.messageID })
+        if (msg.info.role === "assistant") {
+          parentModel = {
+            modelID: msg.info.modelID,
+            providerID: msg.info.providerID,
+          }
+        }
+      } catch (e) {
+        // Parent message not in storage, will use agent model or default
+      }
 
       ctx.metadata({
         title: params.description,
@@ -66,9 +77,9 @@ export const TaskTool = Tool.define("task", async () => {
         })
       })
 
-      const model = agent.model ?? {
-        modelID: msg.info.modelID,
-        providerID: msg.info.providerID,
+      const model = agent.model ?? parentModel ?? {
+        modelID: "grok-code",
+        providerID: "opencode",
       }
 
       function cancel() {

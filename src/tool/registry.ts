@@ -125,16 +125,7 @@ export namespace ToolRegistry {
   ): Promise<Record<string, boolean>> {
     const result: Record<string, boolean> = {}
 
-    if (agent.permission.edit === "deny") {
-      result["edit"] = false
-      result["write"] = false
-    }
-    if (agent.permission.bash["*"] === "deny" && Object.keys(agent.permission.bash).length === 1) {
-      result["bash"] = false
-    }
-    if (agent.permission.webfetch === "deny") {
-      result["webfetch"] = false
-    }
+    // Permission system removed - all tools enabled by default
 
     return result
   }

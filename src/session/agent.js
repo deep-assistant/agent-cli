@@ -91,6 +91,9 @@ export class Agent {
             const errorTime = Date.now()
             const callID = `call_${Math.floor(Math.random() * 100000000)}`
 
+            // Log full error to stderr for debugging
+            console.error('Tool execution error:', error)
+
             // Emit tool_use event with error
             this.emitEvent('tool_use', {
               part: {
@@ -103,7 +106,7 @@ export class Agent {
                 state: {
                   status: 'error',
                   input: tool.params,
-                  error: error.message,
+                  error: error.message || String(error),
                   time: {
                     start: errorTime,
                     end: errorTime
