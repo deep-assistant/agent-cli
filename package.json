@@ -1,0 +1,20 @@
+{
+  "name": "agent-cli",
+  "version": "0.1.0",
+  "description": "AI CLI agent MVP",
+  "main": "src/index.js",
+  "type": "module",
+  "bin": {
+    "agent": "./src/index.js"
+  },
+  "scripts": {
+    "dev": "bun run src/index.js",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "test-anywhere": "^0.7.0",
+    "command-stream": "^0.7.1",
+    "glob": "^10.0.0"
+  },
+  "license": "Unlicense"
+}
