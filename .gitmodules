@@ -1,0 +1,3 @@
+[submodule "original-opencode"]
+	path = original-opencode
+	url = https://github.com/sst/opencode.git
