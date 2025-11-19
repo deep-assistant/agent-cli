@@ -200,6 +200,13 @@ echo '{"message":"hello"}' | bun run src/index.js
 
 Plain text is automatically converted to `{"message":"your text"}` format.
 
+### Pretty-Printed Output
+JSON output is pretty-printed by default for better readability. For automation/scripts, use compact mode:
+```bash
+export AGENT_CLI_COMPACT=1
+echo "hi" | bun run src/index.js
+```
+
 ## Architecture
 
 This agent-cli reproduces OpenCode's `run --format json` command architecture:

@@ -277,8 +277,37 @@ echo '{"message":"fetch url","tools":[{"name":"webfetch","params":{"url":"https:
 
 ## Output Format
 
-All commands output JSON events in real-time:
+### Pretty-Printed by Default
 
+agent-cli outputs pretty-printed JSON for better human readability:
+
+```json
+{
+  "type": "text",
+  "timestamp": 1763582229355,
+  "sessionID": "ses_mi6fbp514d3kuvvtjwk",
+  "part": {
+    "id": "prt_mi6fbp7vkxvwk17e3c",
+    "type": "text",
+    "text": "Hi!",
+    "time": {
+      "start": 1763582229355,
+      "end": 1763582229355
+    }
+  }
+}
+```
+
+### Compact Mode for Automation
+
+For programmatic use (tests, scripts, automation), use compact mode:
+
+```bash
+export AGENT_CLI_COMPACT=1
+echo "hi" | bun run src/index.js
+```
+
+Compact output (one JSON object per line):
 ```json
 {"type":"step_start","timestamp":1234567890,"sessionID":"ses_xxx","part":{...}}
 {"type":"tool_use","timestamp":1234567891,"sessionID":"ses_xxx","part":{...}}
@@ -291,8 +320,11 @@ All commands output JSON events in real-time:
 Extract specific event types using `jq`:
 
 ```bash
-# Get only text responses
+# Get only text responses (pretty-printed)
 echo '{"message":"hello"}' | bun run src/index.js | jq -r 'select(.type=="text") | .part.text'
+
+# Get only text responses (compact mode)
+AGENT_CLI_COMPACT=1 echo '{"message":"hello"}' | bun run src/index.js | jq -r 'select(.type=="text") | .part.text'
 
 # Get tool use events
 echo '{"message":"run","tools":[{"name":"bash","params":{"command":"ls"}}]}' | bun run src/index.js | jq 'select(.type=="tool_use")'

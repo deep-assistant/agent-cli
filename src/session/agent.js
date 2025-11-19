@@ -196,6 +196,9 @@ export class Agent {
       sessionID: this.sessionID,
       ...data
     }
-    console.log(JSON.stringify(event))
+    // Pretty-print JSON for human readability, compact for programmatic use
+    // Use AGENT_CLI_COMPACT=1 for compact output (tests, automation)
+    const compact = process.env.AGENT_CLI_COMPACT === '1'
+    console.log(compact ? JSON.stringify(event) : JSON.stringify(event, null, 2))
   }
 }
