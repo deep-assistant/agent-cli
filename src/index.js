@@ -2,6 +2,7 @@
 
 import { Agent } from './session/agent.js'
 import { Instance } from './project/instance.ts'
+import { Log } from './util/log.ts'
 
 async function readStdin() {
   return new Promise((resolve, reject) => {
@@ -18,6 +19,13 @@ async function readStdin() {
 
 async function main() {
   try {
+    // Initialize logging to redirect to log file instead of stderr
+    // This prevents log messages from mixing with JSON output
+    await Log.init({
+      print: false,  // Don't print to stderr
+      level: 'INFO'
+    })
+
     // Read JSON from stdin
     const input = await readStdin()
     const request = JSON.parse(input.trim())
