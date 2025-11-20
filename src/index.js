@@ -11,13 +11,25 @@ import { hideBin } from 'yargs/helpers'
 async function readStdin() {
   return new Promise((resolve, reject) => {
     let data = ''
-    process.stdin.on('data', chunk => {
+    const onData = chunk => {
       data += chunk
-    })
-    process.stdin.on('end', () => {
+    }
+    const onEnd = () => {
+      cleanup()
       resolve(data)
-    })
-    process.stdin.on('error', reject)
+    }
+    const onError = err => {
+      cleanup()
+      reject(err)
+    }
+    const cleanup = () => {
+      process.stdin.removeListener('data', onData)
+      process.stdin.removeListener('end', onEnd)
+      process.stdin.removeListener('error', onError)
+    }
+    process.stdin.on('data', onData)
+    process.stdin.on('end', onEnd)
+    process.stdin.on('error', onError)
   })
 }
 
@@ -106,6 +118,7 @@ async function main() {
       fn: async () => {
         // Start server like OpenCode does
         const server = Server.listen({ port: 0, hostname: "127.0.0.1" })
+        let unsub = null
 
         try {
           // Create a session
@@ -122,8 +135,8 @@ async function main() {
           }
 
           // Subscribe to all bus events to output them in OpenCode format
-          const eventPromise = new Promise((resolve, reject) => {
-            const unsub = Bus.subscribeAll((event) => {
+          const eventPromise = new Promise((resolve) => {
+            unsub = Bus.subscribeAll((event) => {
               // Output events in OpenCode JSON format
               if (event.type === 'message.part.updated') {
                 const part = event.properties.part
@@ -169,7 +182,6 @@ async function main() {
 
               // Handle session idle to know when to stop
               if (event.type === 'session.idle' && event.properties.sessionID === sessionID) {
-                unsub()
                 resolve()
               }
 
@@ -210,12 +222,11 @@ async function main() {
 
           // Wait for session to become idle
           await eventPromise
-
-          // Stop server
+        } finally {
+          // Always clean up resources
+          if (unsub) unsub()
           server.stop()
-        } catch (error) {
-          server.stop()
-          throw error
+          await Instance.dispose()
         }
       }
     })
