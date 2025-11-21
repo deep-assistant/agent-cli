@@ -1,11 +1,45 @@
 import { test, expect, setDefaultTimeout } from 'bun:test'
 import { $ } from 'bun'
 import { spawn } from 'child_process'
-import { writeFileSync, unlinkSync } from 'fs'
+import { writeFileSync, unlinkSync, mkdirSync, existsSync } from 'fs'
 import { join } from 'path'
+
+// Ensure tmp directory exists
+const TMP_DIR = join(process.cwd(), 'tmp')
+if (!existsSync(TMP_DIR)) {
+  mkdirSync(TMP_DIR, { recursive: true })
+}
 
 // Increase default timeout to 30 seconds for these tests
 setDefaultTimeout(30000)
+
+// Helper function to parse JSON output (handles pretty-printed format)
+function parseJSONOutput(stdout) {
+  const trimmed = stdout.trim()
+  const events = []
+  let currentJson = ''
+  let braceCount = 0
+
+  for (const line of trimmed.split('\n')) {
+    for (const char of line) {
+      if (char === '{') braceCount++
+      if (char === '}') braceCount--
+      currentJson += char
+
+      if (braceCount === 0 && currentJson.trim()) {
+        try {
+          events.push(JSON.parse(currentJson.trim()))
+          currentJson = ''
+        } catch (e) {
+          // Continue accumulating
+        }
+      }
+    }
+    currentJson += '\n'
+  }
+
+  return events
+}
 
 // Helper to run agent-cli using spawn
 async function runAgentCli(input) {
@@ -91,16 +125,16 @@ test('Reference test: OpenCode tool produces expected JSON format', async () => 
   const timestamp = Date.now()
   const randomId = Math.random().toString(36).substr(2, 9)
 
-  // Create test files with unique names
-  const file1 = `ls-test1-${timestamp}-${randomId}.txt`
-  const file2 = `ls-test2-${timestamp}-${randomId}.txt`
+  // Create test files with unique names in tmp directory
+  const file1 = join(TMP_DIR, `ls-test1-${timestamp}-${randomId}.txt`)
+  const file2 = join(TMP_DIR, `ls-test2-${timestamp}-${randomId}.txt`)
 
   writeFileSync(file1, 'content1')
   writeFileSync(file2, 'content2')
 
   try {
     // Test original OpenCode list tool
-    const input = `{"message":"list files","tools":[{"name":"list","params":{"path":"."}}]}`
+    const input = `{"message":"list files","tools":[{"name":"list","params":{"path":"tmp"}}]}`
     const originalResult = await $`echo ${input} | opencode run --format json --model opencode/grok-code`.quiet().nothrow()
     const originalLines = originalResult.stdout.toString().trim().split('\n').filter(line => line.trim())
     const originalEvents = originalLines.map(line => JSON.parse(line))
@@ -135,15 +169,15 @@ test('Agent-cli list tool produces 100% compatible JSON output with OpenCode', a
   const timestamp = Date.now()
   const randomId = Math.random().toString(36).substr(2, 9)
 
-  // Create test files with unique names
-  const file1 = `ls-test1-${timestamp}-${randomId}.txt`
-  const file2 = `ls-test2-${timestamp}-${randomId}.txt`
+  // Create test files with unique names in tmp directory
+  const file1 = join(TMP_DIR, `ls-test1-${timestamp}-${randomId}.txt`)
+  const file2 = join(TMP_DIR, `ls-test2-${timestamp}-${randomId}.txt`)
 
   writeFileSync(file1, 'content1')
   writeFileSync(file2, 'content2')
 
   try {
-    const input = `{"message":"list files","tools":[{"name":"list","params":{"path":"."}}]}`
+    const input = `{"message":"list files in tmp directory","tools":[{"name":"list","params":{"path":"tmp"}}]}`
 
     // Get OpenCode output
     const originalResult = await $`echo ${input} | opencode run --format json --model opencode/grok-code`.quiet().nothrow()
@@ -152,11 +186,8 @@ test('Agent-cli list tool produces 100% compatible JSON output with OpenCode', a
     const originalTool = originalEvents.find(e => e.type === 'tool_use' && e.part.tool === 'list')
 
     // Get agent-cli output
-    // const projectRoot = process.cwd()
-    // const agentResult = await $`echo ${input} | bun run ${projectRoot}/src/index.js`.quiet()
     const agentResult = await runAgentCli(input)
-    const agentLines = agentResult.stdout.toString().trim().split('\n').filter(line => line.trim())
-    const agentEvents = agentLines.map(line => JSON.parse(line))
+    const agentEvents = parseJSONOutput(agentResult.stdout)
     const agentTool = agentEvents.find(e => e.type === 'tool_use' && e.part.tool === 'list')
 
     // Validate both outputs using shared assertion function
