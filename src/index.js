@@ -11,6 +11,32 @@ import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 import { createEventHandler, isValidJsonStandard } from './json-standard/index.ts'
 
+// Track if any errors occurred during execution
+let hasError = false
+
+// Install global error handlers to ensure non-zero exit codes
+process.on('uncaughtException', (error) => {
+  hasError = true
+  console.error(JSON.stringify({
+    type: 'error',
+    errorType: error.name || 'UncaughtException',
+    message: error.message,
+    stack: error.stack
+  }, null, 2))
+  process.exit(1)
+})
+
+process.on('unhandledRejection', (reason, promise) => {
+  hasError = true
+  console.error(JSON.stringify({
+    type: 'error',
+    errorType: 'UnhandledRejection',
+    message: reason?.message || String(reason),
+    stack: reason?.stack
+  }, null, 2))
+  process.exit(1)
+})
+
 async function readStdin() {
   return new Promise((resolve, reject) => {
     let data = ''
@@ -224,6 +250,7 @@ async function main() {
             if (event.type === 'session.error') {
               const props = event.properties
               if (props.sessionID !== sessionID || !props.error) return
+              hasError = true
               eventHandler.output({
                 type: 'error',
                 timestamp: Date.now(),
@@ -251,8 +278,14 @@ async function main() {
             system: systemMessage,
             appendSystem: appendSystemMessage
           })
-        }).catch(() => {
-          // Ignore errors, we're listening to events
+        }).catch((error) => {
+          hasError = true
+          eventHandler.output({
+            type: 'error',
+            timestamp: Date.now(),
+            sessionID,
+            error: error instanceof Error ? error.message : String(error)
+          })
         })
 
         // Wait for session to become idle
@@ -334,6 +367,7 @@ async function main() {
             if (event.type === 'session.error') {
               const props = event.properties
               if (props.sessionID !== sessionID || !props.error) return
+              hasError = true
               eventHandler.output({
                 type: 'error',
                 timestamp: Date.now(),
@@ -359,6 +393,7 @@ async function main() {
           system: systemMessage,
           appendSystem: appendSystemMessage
         }).catch((error) => {
+          hasError = true
           eventHandler.output({
             type: 'error',
             timestamp: Date.now(),
@@ -376,14 +411,17 @@ async function main() {
       }
     }
 
-    // Explicitly exit to ensure process terminates
-    process.exit(0)
+    // Explicitly exit to ensure process terminates with correct code
+    process.exit(hasError ? 1 : 0)
   } catch (error) {
+    hasError = true
     console.error(JSON.stringify({
       type: 'error',
       timestamp: Date.now(),
-      error: error instanceof Error ? error.message : String(error)
-    }))
+      errorType: error instanceof Error ? error.name : 'Error',
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    }, null, 2))
     process.exit(1)
   }
 }
