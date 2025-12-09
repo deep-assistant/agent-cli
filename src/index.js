@@ -9,6 +9,7 @@ import { SessionPrompt } from './session/prompt.ts'
 import { EOL } from 'os'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
+import { createEventHandler, isValidJsonStandard } from './json-standard/index.ts'
 
 async function readStdin() {
   return new Promise((resolve, reject) => {
@@ -44,6 +45,12 @@ async function main() {
         description: 'Model to use in format providerID/modelID',
         default: 'opencode/grok-code'
       })
+      .option('json-standard', {
+        type: 'string',
+        description: 'JSON output format standard: "opencode" (default) or "claude" (experimental)',
+        default: 'opencode',
+        choices: ['opencode', 'claude']
+      })
       .option('system-message', {
         type: 'string',
         description: 'Full override of the system message'
@@ -72,6 +79,13 @@ async function main() {
     const modelParts = argv.model.split('/')
     const providerID = modelParts[0] || 'opencode'
     const modelID = modelParts[1] || 'grok-code'
+
+    // Validate and get JSON standard
+    const jsonStandard = argv['json-standard']
+    if (!isValidJsonStandard(jsonStandard)) {
+      console.error(`Invalid JSON standard: ${jsonStandard}. Use "opencode" or "claude".`)
+      process.exit(1)
+    }
 
     // Read system message files
     let systemMessage = argv['system-message']
@@ -152,49 +166,52 @@ async function main() {
           throw new Error("Failed to create session")
         }
 
-        // Subscribe to all bus events to output them in OpenCode format
+        // Create event handler for the selected JSON standard
+        const eventHandler = createEventHandler(jsonStandard, sessionID)
+
+        // Subscribe to all bus events and output in selected format
         const eventPromise = new Promise((resolve) => {
           unsub = Bus.subscribeAll((event) => {
-            // Output events in OpenCode JSON format
+            // Output events in selected JSON format
             if (event.type === 'message.part.updated') {
               const part = event.properties.part
               if (part.sessionID !== sessionID) return
 
-              // Output different event types (pretty-printed for readability)
+              // Output different event types
               if (part.type === 'step-start') {
-                process.stdout.write(JSON.stringify({
+                eventHandler.output({
                   type: 'step_start',
                   timestamp: Date.now(),
                   sessionID,
                   part
-                }, null, 2) + EOL)
+                })
               }
 
               if (part.type === 'step-finish') {
-                process.stdout.write(JSON.stringify({
+                eventHandler.output({
                   type: 'step_finish',
                   timestamp: Date.now(),
                   sessionID,
                   part
-                }, null, 2) + EOL)
+                })
               }
 
               if (part.type === 'text' && part.time?.end) {
-                process.stdout.write(JSON.stringify({
+                eventHandler.output({
                   type: 'text',
                   timestamp: Date.now(),
                   sessionID,
                   part
-                }, null, 2) + EOL)
+                })
               }
 
               if (part.type === 'tool' && part.state.status === 'completed') {
-                process.stdout.write(JSON.stringify({
+                eventHandler.output({
                   type: 'tool_use',
                   timestamp: Date.now(),
                   sessionID,
                   part
-                }, null, 2) + EOL)
+                })
               }
             }
 
@@ -207,12 +224,12 @@ async function main() {
             if (event.type === 'session.error') {
               const props = event.properties
               if (props.sessionID !== sessionID || !props.error) return
-              process.stdout.write(JSON.stringify({
+              eventHandler.output({
                 type: 'error',
                 timestamp: Date.now(),
                 sessionID,
                 error: props.error
-              }, null, 2) + EOL)
+              })
             }
           })
         })
@@ -259,49 +276,52 @@ async function main() {
         })
         const sessionID = session.id
 
-        // Subscribe to all bus events to output them in OpenCode format
+        // Create event handler for the selected JSON standard
+        const eventHandler = createEventHandler(jsonStandard, sessionID)
+
+        // Subscribe to all bus events and output in selected format
         const eventPromise = new Promise((resolve) => {
           unsub = Bus.subscribeAll((event) => {
-            // Output events in OpenCode JSON format
+            // Output events in selected JSON format
             if (event.type === 'message.part.updated') {
               const part = event.properties.part
               if (part.sessionID !== sessionID) return
 
-              // Output different event types (pretty-printed for readability)
+              // Output different event types
               if (part.type === 'step-start') {
-                process.stdout.write(JSON.stringify({
+                eventHandler.output({
                   type: 'step_start',
                   timestamp: Date.now(),
                   sessionID,
                   part
-                }, null, 2) + EOL)
+                })
               }
 
               if (part.type === 'step-finish') {
-                process.stdout.write(JSON.stringify({
+                eventHandler.output({
                   type: 'step_finish',
                   timestamp: Date.now(),
                   sessionID,
                   part
-                }, null, 2) + EOL)
+                })
               }
 
               if (part.type === 'text' && part.time?.end) {
-                process.stdout.write(JSON.stringify({
+                eventHandler.output({
                   type: 'text',
                   timestamp: Date.now(),
                   sessionID,
                   part
-                }, null, 2) + EOL)
+                })
               }
 
               if (part.type === 'tool' && part.state.status === 'completed') {
-                process.stdout.write(JSON.stringify({
+                eventHandler.output({
                   type: 'tool_use',
                   timestamp: Date.now(),
                   sessionID,
                   part
-                }, null, 2) + EOL)
+                })
               }
             }
 
@@ -314,12 +334,12 @@ async function main() {
             if (event.type === 'session.error') {
               const props = event.properties
               if (props.sessionID !== sessionID || !props.error) return
-              process.stdout.write(JSON.stringify({
+              eventHandler.output({
                 type: 'error',
                 timestamp: Date.now(),
                 sessionID,
                 error: props.error
-              }, null, 2) + EOL)
+              })
             }
           })
         })
@@ -339,12 +359,12 @@ async function main() {
           system: systemMessage,
           appendSystem: appendSystemMessage
         }).catch((error) => {
-          process.stdout.write(JSON.stringify({
+          eventHandler.output({
             type: 'error',
             timestamp: Date.now(),
             sessionID,
             error: error instanceof Error ? error.message : String(error)
-          }, null, 2) + EOL)
+          })
         })
 
         // Wait for session to become idle

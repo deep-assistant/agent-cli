@@ -156,6 +156,8 @@ agent [options]
 Options:
   --model                        Model to use in format providerID/modelID
                                  Default: opencode/grok-code
+  --json-standard                JSON output format standard
+                                 Choices: "opencode" (default), "claude" (experimental)
   --system-message               Full override of the system message
   --system-message-file          Full override of the system message from file
   --append-system-message        Append to the default system message
@@ -163,6 +165,36 @@ Options:
   --help                         Show help
   --version                      Show version number
 ```
+
+### JSON Output Standards
+
+The agent supports two JSON output format standards via the `--json-standard` option:
+
+#### OpenCode Standard (default)
+
+The OpenCode format is the default JSON output format, compatible with `opencode run --format json`:
+
+```bash
+echo "hi" | agent --json-standard opencode
+```
+
+- **Format**: Pretty-printed JSON (human-readable with indentation)
+- **Event Types**: `step_start`, `step_finish`, `text`, `tool_use`, `error`
+- **Timestamps**: Unix milliseconds (number)
+- **Session ID**: `sessionID` (camelCase)
+
+#### Claude Standard (experimental)
+
+The Claude format provides compatibility with Anthropic's Claude CLI `--output-format stream-json`:
+
+```bash
+echo "hi" | agent --json-standard claude
+```
+
+- **Format**: NDJSON (Newline-Delimited JSON - compact, one JSON per line)
+- **Event Types**: `init`, `message`, `tool_use`, `tool_result`, `result`
+- **Timestamps**: ISO 8601 strings
+- **Session ID**: `session_id` (snake_case)
 
 ### Input Formats
 
@@ -255,6 +287,7 @@ Bun automatically discovers and runs all `*.test.js` files in the project.
 - ✅ 13 tool implementation tests
 - ✅ Plain text input support test
 - ✅ OpenCode compatibility tests for websearch/codesearch
+- ✅ JSON standard unit tests (opencode and claude formats)
 - ✅ All tests pass with 100% OpenCode JSON format compatibility
 
 ### Publishing

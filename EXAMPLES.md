@@ -279,7 +279,28 @@ echo '{"message":"fetch url","tools":[{"name":"webfetch","params":{"url":"https:
 
 ## Output Format
 
-### JSON Event Streaming (Pretty-Printed)
+### JSON Standards
+
+@link-assistant/agent supports two JSON output format standards via the `--json-standard` option:
+
+#### OpenCode Standard (default)
+
+```bash
+# Default - same as --json-standard opencode
+echo "hi" | agent
+
+# Explicit opencode standard
+echo "hi" | agent --json-standard opencode
+```
+
+#### Claude Standard (experimental)
+
+```bash
+# Claude CLI compatible format (NDJSON)
+echo "hi" | agent --json-standard claude
+```
+
+### JSON Event Streaming (Pretty-Printed) - OpenCode Standard
 
 @link-assistant/agent outputs JSON events in pretty-printed streaming format for easy readability, 100% compatible with OpenCode's event structure:
 
@@ -326,6 +347,28 @@ This format is designed for:
 - **Streaming**: Events output in real-time as they occur
 - **Compatibility**: 100% compatible with OpenCode's event structure
 - **Automation**: Can be parsed using standard JSON tools (see filtering examples below)
+
+### Claude Stream-JSON Output (NDJSON)
+
+When using `--json-standard claude`, output is in NDJSON (Newline-Delimited JSON) format, compatible with Claude CLI:
+
+```bash
+echo "hi" | agent --json-standard claude
+```
+
+Output (compact NDJSON):
+```json
+{"type":"init","timestamp":"2025-01-01T00:00:00.000Z","session_id":"ses_560236487ffe3ROK1ThWvPwTEF"}
+{"type":"message","timestamp":"2025-01-01T00:00:01.000Z","session_id":"ses_560236487ffe3ROK1ThWvPwTEF","role":"assistant","content":[{"type":"text","text":"Hi! How can I help with your coding tasks today?"}]}
+{"type":"result","timestamp":"2025-01-01T00:00:01.100Z","session_id":"ses_560236487ffe3ROK1ThWvPwTEF","status":"success","duration_ms":1100}
+```
+
+Key differences from OpenCode format:
+- **Compact**: One JSON per line (no pretty-printing)
+- **Event Types**: `init`, `message`, `tool_use`, `tool_result`, `result`
+- **Timestamps**: ISO 8601 strings instead of Unix milliseconds
+- **Session ID**: `session_id` (snake_case) instead of `sessionID` (camelCase)
+- **Content**: Message content in array format with `{type, text}` objects
 
 ### Filtering Output
 
