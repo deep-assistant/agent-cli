@@ -21,7 +21,7 @@ This is an MVP implementation of an OpenCode-compatible CLI agent, focused on ma
 
 - ✅ **JSON Input/Output**: Compatible with `opencode run --format json --model opencode/grok-code`
 - ✅ **Plain Text Input**: Also accepts plain text messages (auto-converted to JSON format)
-- ✅ **Flexible Model Selection**: Defaults to free OpenCode Zen Grok Code Fast 1, supports all [OpenCode Zen models](https://opencode.ai/docs/zen/)
+- ✅ **Flexible Model Selection**: Defaults to free OpenCode Zen Grok Code Fast 1, supports [OpenCode Zen](https://opencode.ai/docs/zen/) and [Groq](docs/groq.md) providers
 - ✅ **No Restrictions**: Fully unrestricted file system and command execution access (no sandbox)
 - ✅ **Minimal Footprint**: Built with Bun.sh for maximum efficiency
 - ✅ **Full Tool Support**: 13 tools including websearch, codesearch, batch - all enabled by default
@@ -75,7 +75,7 @@ The agent streams events as they occur, providing the same real-time experience 
 - **Plain Text Input**: Also accepts plain text messages (auto-converted to JSON format)
 - **Unrestricted Access**: Full file system and command execution access (no sandbox, no restrictions)
 - **Tool Support**: 13 tools including websearch, codesearch, batch - all enabled by default
-- **Flexible Model Selection**: Defaults to free Grok Code Fast 1, supports all [OpenCode Zen models](https://opencode.ai/docs/zen/) - see [MODELS.md](MODELS.md)
+- **Flexible Model Selection**: Defaults to free Grok Code Fast 1, supports [OpenCode Zen](https://opencode.ai/docs/zen/) and [Groq](docs/groq.md) - see [MODELS.md](MODELS.md)
 - **Bun.sh First**: Built with Bun for maximum efficiency and minimal resource usage
 - **No TUI**: Pure JSON CLI interface for automation and integration
 - **Public Domain**: Unlicense - use it however you want
@@ -144,9 +144,14 @@ echo "hi" | agent --model opencode/sonnet        # Claude Sonnet 4.5
 echo "hi" | agent --model opencode/haiku         # Claude Haiku 4.5
 echo "hi" | agent --model opencode/opus          # Claude Opus 4.1
 echo "hi" | agent --model opencode/gemini-3-pro  # Gemini 3 Pro
+
+# Groq models (requires GROQ_API_KEY)
+echo "hi" | agent --model groq/llama-3.3-70b-versatile  # Llama 3.3 70B
+echo "hi" | agent --model groq/llama-3.1-8b-instant     # Llama 3.1 8B (fast)
 ```
 
 See [MODELS.md](MODELS.md) for complete list of available models and pricing.
+See [docs/groq.md](docs/groq.md) for Groq provider documentation.
 
 ### CLI Options
 

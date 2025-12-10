@@ -1,10 +1,17 @@
 # Models
 
-This agent uses models from the [OpenCode Zen](https://opencode.ai/docs/zen/) subscription service. OpenCode Zen provides access to a wide variety of AI models through a unified API.
+This agent supports multiple model providers. By default, it uses models from the [OpenCode Zen](https://opencode.ai/docs/zen/) subscription service. Additionally, you can use models directly from providers like [Groq](https://groq.com/) by setting the appropriate API key.
+
+## Supported Providers
+
+| Provider | Format | API Key Env Variable | Documentation |
+|----------|--------|---------------------|---------------|
+| OpenCode Zen | `opencode/<model-id>` | N/A (public for free models) | [OpenCode Zen](https://opencode.ai/docs/zen/) |
+| Groq | `groq/<model-id>` | `GROQ_API_KEY` | [Groq Documentation](docs/groq.md) |
 
 ## Available Models
 
-All models are accessed using the format `opencode/<model-id>`. Use the `--model` option to specify which model to use:
+All models are accessed using the format `<provider>/<model-id>`. Use the `--model` option to specify which model to use:
 
 ```bash
 echo "hi" | agent --model opencode/grok-code
@@ -93,3 +100,40 @@ For complete details about OpenCode Zen subscription and pricing, visit the [Ope
 - Cache pricing applies when using prompt caching features
 - Token context limits vary by model
 - Free models have no token costs but may have rate limits
+
+---
+
+## Groq Provider
+
+[Groq](https://groq.com/) provides ultra-fast inference for open-source large language models. To use Groq models, set your API key:
+
+```bash
+export GROQ_API_KEY=your_api_key_here
+```
+
+### Groq Models
+
+| Model | Model ID | Context Window | Tool Use |
+|-------|----------|----------------|----------|
+| Llama 3.3 70B Versatile | `groq/llama-3.3-70b-versatile` | 131,072 tokens | Yes |
+| Llama 3.1 8B Instant | `groq/llama-3.1-8b-instant` | 131,072 tokens | Yes |
+| GPT-OSS 120B | `groq/openai/gpt-oss-120b` | 131,072 tokens | Yes |
+| GPT-OSS 20B | `groq/openai/gpt-oss-20b` | 131,072 tokens | Yes |
+| Qwen3 32B | `groq/qwen/qwen3-32b` | 131,072 tokens | Yes |
+| Compound | `groq/groq/compound` | 131,072 tokens | Yes |
+| Compound Mini | `groq/groq/compound-mini` | 131,072 tokens | Yes |
+
+### Groq Usage Examples
+
+```bash
+# Using Llama 3.3 70B (recommended)
+echo "hello" | agent --model groq/llama-3.3-70b-versatile
+
+# Using faster Llama 3.1 8B
+echo "hello" | agent --model groq/llama-3.1-8b-instant
+
+# Using Compound (agentic with server-side tools)
+echo "hello" | agent --model groq/groq/compound
+```
+
+For more details, see the [Groq Documentation](docs/groq.md).
