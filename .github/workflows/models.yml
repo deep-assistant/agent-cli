@@ -44,6 +44,15 @@ on:
         required: false
         type: string
         default: ''
+      test_type:
+        description: 'Test Type'
+        required: true
+        type: choice
+        default: 'both'
+        options:
+          - with_tools
+          - without_tools
+          - both
 
 
 jobs:
@@ -66,43 +75,34 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-       - name: Determine model to test
-         id: model
-         run: |
-           CUSTOM_MODEL="${{ inputs.custom_model }}"
-           if [ -n "$CUSTOM_MODEL" ]; then
-             MODEL_ID="${{ inputs.provider }}/$CUSTOM_MODEL"
-           else
-             MODEL_ID="${{ inputs.provider }}/${{ inputs.model }}"
-           fi
-           echo "model_id=$MODEL_ID" >> $GITHUB_OUTPUT
-           echo "Testing model: $MODEL_ID"
+      - name: Determine model to test
+        id: model
+        run: |
+          CUSTOM_MODEL="${{ inputs.custom_model }}"
+          MODEL_NAME="${{ inputs.model }}"
+          PROVIDER="${{ inputs.provider }}"
 
-       - name: Fetch model capabilities
-         id: capabilities
-         run: |
-           PROVIDER="${{ inputs.provider }}"
-           MODEL="${{ inputs.custom_model }}"
-           if [ -z "$MODEL" ]; then
-             MODEL="${{ inputs.model }}"
-           fi
+          if [ -n "$CUSTOM_MODEL" ]; then
+            MODEL_ID="$PROVIDER/$CUSTOM_MODEL"
+            MODEL_NAME="$CUSTOM_MODEL"
+          else
+            MODEL_ID="$PROVIDER/$MODEL_NAME"
+          fi
 
-           # Fetch model data from models.dev
-           MODEL_DATA=$(curl -s "https://models.dev/api.json" | jq -r ".\"$PROVIDER\".models.\"$MODEL\" // empty")
+          echo "model_id=$MODEL_ID" >> $GITHUB_OUTPUT
+          echo "model_name=$MODEL_NAME" >> $GITHUB_OUTPUT
+          echo "Testing model: $MODEL_ID"
 
-           if [ -n "$MODEL_DATA" ]; then
-             TOOL_CALL=$(echo "$MODEL_DATA" | jq -r '.tool_call // false')
-             echo "tool_call=$TOOL_CALL" >> $GITHUB_OUTPUT
-             echo "Model supports tool calling: $TOOL_CALL"
-           else
-             echo "Model data not found, assuming tool_call=true for known providers"
-             echo "tool_call=true" >> $GITHUB_OUTPUT
-           fi
+      - name: Fetch model capabilities
+        id: capabilities
+        run: |
+          OUTPUT=$(node scripts/get-model-info.mjs "${{ inputs.provider }}" "${{ steps.model.outputs.model_name }}")
+          echo "$OUTPUT"
+          echo "$OUTPUT" >> $GITHUB_OUTPUT
 
       - name: Check API key availability
         run: |
-          PROVIDER="${{ inputs.provider }}"
-          if [ "$PROVIDER" = "groq" ]; then
+          if [ "${{ inputs.provider }}" = "groq" ]; then
             if [ -z "$GROQ_API_KEY" ]; then
               echo "::warning::GROQ_API_KEY is not set. Groq tests may fail."
             else
@@ -112,70 +112,11 @@ jobs:
 
       - name: Test without tools (simple response)
         if: inputs.test_type == 'without_tools' || inputs.test_type == 'both'
-        run: |
-          echo "Testing model: ${{ steps.model.outputs.model_id }}"
-          echo "Test: Simple message without tool calls"
-          echo ""
-
-          # Test simple message (no tool calls expected)
-          TEST_INPUT='{"message": "What is 2 + 2? Answer with just the number."}'
-          echo "$TEST_INPUT" | timeout 60s bun run src/index.js --model "${{ steps.model.outputs.model_id }}" > test-output-simple.log 2>&1 || EXIT_CODE=$?
-
-          echo "Exit code: ${EXIT_CODE:-0}"
-          echo ""
-          echo "Output:"
-          cat test-output-simple.log
-
-          # Check for success
-          if [ "${EXIT_CODE:-0}" -eq 0 ]; then
-            echo ""
-            echo "✅ Simple test PASSED"
-          elif [ "${EXIT_CODE:-0}" -eq 124 ]; then
-            echo ""
-            echo "⚠️ Test timed out (may still be valid for some models)"
-          else
-            echo ""
-            echo "❌ Simple test FAILED with exit code ${EXIT_CODE:-0}"
-            exit 1
-          fi
+        run: node scripts/test-model-simple.mjs "${{ steps.model.outputs.model_id }}"
 
       - name: Test with tools (tool calling)
         if: inputs.test_type == 'with_tools' || inputs.test_type == 'both'
-        run: |
-          echo "Testing model: ${{ steps.model.outputs.model_id }}"
-          echo "Test: Message expecting tool call"
-          echo ""
-
-          # Test message that should trigger tool use
-          TEST_INPUT='{"message": "List the files in the current directory using the bash tool with ls command"}'
-          echo "$TEST_INPUT" | timeout 90s bun run src/index.js --model "${{ steps.model.outputs.model_id }}" > test-output-tools.log 2>&1 || EXIT_CODE=$?
-
-          echo "Exit code: ${EXIT_CODE:-0}"
-          echo ""
-          echo "Output:"
-          cat test-output-tools.log
-
-          # Check for tool_use event in output
-          if grep -q '"type":"tool_use"' test-output-tools.log || grep -q '"type": "tool_use"' test-output-tools.log; then
-            echo ""
-            echo "✅ Tool use detected in output"
-          else
-            echo ""
-            echo "⚠️ No tool_use event found (model may not support tool calling or chose not to use tools)"
-          fi
-
-          # Check for success
-          if [ "${EXIT_CODE:-0}" -eq 0 ]; then
-            echo ""
-            echo "✅ Tool test PASSED"
-          elif [ "${EXIT_CODE:-0}" -eq 124 ]; then
-            echo ""
-            echo "⚠️ Test timed out (may still be valid for complex tool operations)"
-          else
-            echo ""
-            echo "❌ Tool test FAILED with exit code ${EXIT_CODE:-0}"
-            exit 1
-          fi
+        run: node scripts/test-model-tools.mjs "${{ steps.model.outputs.model_id }}"
 
       - name: Summary
         run: |
