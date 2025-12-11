@@ -6,7 +6,7 @@
  */
 
 import { spawn } from 'child_process';
-import { writeFileSync, readFileSync } from 'fs';
+import { writeFileSync, readFileSync, createWriteStream } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -43,7 +43,7 @@ console.log('Running test...');
 console.log('');
 
 const logFile = join(projectRoot, 'test-output-simple.log');
-const logStream = require('fs').createWriteStream(logFile);
+const logStream = createWriteStream(logFile);
 
 // Run the agent
 const agent = spawn('bun', ['run', join(projectRoot, 'src/index.js'), '--model', modelId], {
