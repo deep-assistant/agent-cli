@@ -8,6 +8,7 @@ import { BunProc } from "../bun"
 import { ModelsDev } from "./models"
 import { NamedError } from "../util/error"
 import { Auth } from "../auth"
+import { ClaudeAuth } from "../auth/claude"
 import { Instance } from "../project/instance"
 import { Global } from "../global"
 import { Flag } from "../flag/flag"
@@ -241,6 +242,63 @@ export namespace Provider {
         options: {},
       }
     },
+    /**
+     * Claude OAuth provider - uses Claude Code CLI OAuth credentials
+     * to access Anthropic models via the Claude API.
+     *
+     * This provider reads OAuth tokens from ~/.claude/.credentials.json
+     * (created by Claude Code CLI's 'claude auth login' command) and uses
+     * them to authenticate with the Anthropic API using Bearer token auth.
+     *
+     * Environment variable: CLAUDE_CODE_OAUTH_TOKEN can also be used.
+     *
+     * Note: OAuth tokens use Bearer authentication (Authorization header)
+     * instead of x-api-key authentication used by standard API keys.
+     */
+    "claude-oauth": async (input) => {
+      // Check for OAuth token from environment variable first
+      let oauthToken = process.env["CLAUDE_CODE_OAUTH_TOKEN"]
+      let tokenSource = "environment"
+
+      if (!oauthToken) {
+        // Check for OAuth credentials from Claude Code CLI
+        const claudeCreds = await ClaudeAuth.get()
+        if (claudeCreds) {
+          oauthToken = claudeCreds.accessToken
+          tokenSource = `Claude Code CLI (${claudeCreds.subscriptionType ?? "unknown"})`
+        }
+      }
+
+      if (!oauthToken) {
+        return { autoload: false }
+      }
+
+      log.info("using claude oauth credentials", { source: tokenSource })
+
+      // OAuth tokens require Bearer authentication instead of x-api-key
+      // We use a custom fetch to override the authentication header
+      const customFetch: typeof fetch = async (url, init) => {
+        const headers = new Headers(init?.headers)
+        // Remove x-api-key if present and add Authorization Bearer
+        headers.delete("x-api-key")
+        headers.set("Authorization", `Bearer ${oauthToken}`)
+        return fetch(url, { ...init, headers })
+      }
+
+      return {
+        autoload: true,
+        options: {
+          // Use a placeholder key to satisfy the SDK's API key requirement
+          // The actual authentication is done via Bearer token in customFetch
+          apiKey: "oauth-token-placeholder",
+          fetch: customFetch,
+          headers: {
+            "anthropic-beta":
+              "claude-code-20250219,interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14",
+          },
+        },
+      }
+    },
   }
 
   const state = Instance.state(async () => {
@@ -307,6 +365,19 @@ export namespace Provider {
         name: "GitHub Copilot Enterprise",
         // Enterprise uses a different API endpoint - will be set dynamically based on auth
         api: undefined,
+      }
+    }
+
+    // Add Claude OAuth provider that inherits from Anthropic
+    // This allows using Claude Code CLI OAuth credentials with the Anthropic API
+    if (database["anthropic"]) {
+      const anthropic = database["anthropic"]
+      database["claude-oauth"] = {
+        ...anthropic,
+        id: "claude-oauth",
+        name: "Claude OAuth",
+        // Use CLAUDE_CODE_OAUTH_TOKEN environment variable
+        env: ["CLAUDE_CODE_OAUTH_TOKEN"],
       }
     }
 
