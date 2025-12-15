@@ -601,11 +601,192 @@ const GitHubCopilotPlugin: AuthPlugin = {
 }
 
 /**
+ * OpenAI ChatGPT OAuth Configuration
+ * Used for ChatGPT Plus/Pro subscription authentication via Codex backend
+ */
+const OPENAI_CLIENT_ID = "app_EMoamEEEZ73f0CkXaXp7hrann"
+const OPENAI_AUTHORIZE_URL = "https://auth.openai.com/oauth/authorize"
+const OPENAI_TOKEN_URL = "https://auth.openai.com/oauth/token"
+const OPENAI_REDIRECT_URI = "http://localhost:1455/auth/callback"
+const OPENAI_SCOPE = "openid profile email offline_access"
+
+/**
+ * OpenAI ChatGPT OAuth Plugin
+ * Supports:
+ * - ChatGPT Plus/Pro OAuth login
+ * - Manual API key entry
+ *
+ * Note: This is a simplified implementation that uses manual code entry.
+ * The full opencode-openai-codex-auth plugin uses a local server on port 1455.
+ */
+const OpenAIPlugin: AuthPlugin = {
+  provider: "openai",
+  methods: [
+    {
+      label: "ChatGPT Plus/Pro (OAuth)",
+      type: "oauth",
+      async authorize() {
+        const pkce = await generatePKCE()
+        const state = generateRandomString(16)
+
+        const url = new URL(OPENAI_AUTHORIZE_URL)
+        url.searchParams.set("response_type", "code")
+        url.searchParams.set("client_id", OPENAI_CLIENT_ID)
+        url.searchParams.set("redirect_uri", OPENAI_REDIRECT_URI)
+        url.searchParams.set("scope", OPENAI_SCOPE)
+        url.searchParams.set("code_challenge", pkce.challenge)
+        url.searchParams.set("code_challenge_method", "S256")
+        url.searchParams.set("state", state)
+        url.searchParams.set("id_token_add_organizations", "true")
+        url.searchParams.set("codex_cli_simplified_flow", "true")
+        url.searchParams.set("originator", "codex_cli_rs")
+
+        return {
+          url: url.toString(),
+          instructions:
+            "After authorizing, copy the URL from your browser address bar and paste it here (or just the code parameter): ",
+          method: "code" as const,
+          async callback(input?: string): Promise<AuthResult> {
+            if (!input) return { type: "failed" }
+
+            // Parse authorization input - can be full URL, code#state, or just code
+            let code: string | undefined
+            let receivedState: string | undefined
+
+            try {
+              const inputUrl = new URL(input.trim())
+              code = inputUrl.searchParams.get("code") ?? undefined
+              receivedState = inputUrl.searchParams.get("state") ?? undefined
+            } catch {
+              // Not a URL, try other formats
+              if (input.includes("#")) {
+                const [c, s] = input.split("#", 2)
+                code = c
+                receivedState = s
+              } else if (input.includes("code=")) {
+                const params = new URLSearchParams(input)
+                code = params.get("code") ?? undefined
+                receivedState = params.get("state") ?? undefined
+              } else {
+                code = input.trim()
+              }
+            }
+
+            if (!code) {
+              log.error("openai oauth no code provided")
+              return { type: "failed" }
+            }
+
+            // Exchange authorization code for tokens
+            const tokenResult = await fetch(OPENAI_TOKEN_URL, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+              },
+              body: new URLSearchParams({
+                grant_type: "authorization_code",
+                client_id: OPENAI_CLIENT_ID,
+                code,
+                code_verifier: pkce.verifier,
+                redirect_uri: OPENAI_REDIRECT_URI,
+              }),
+            })
+
+            if (!tokenResult.ok) {
+              log.error("openai oauth token exchange failed", { status: tokenResult.status })
+              return { type: "failed" }
+            }
+
+            const json = await tokenResult.json()
+            if (!json.access_token || !json.refresh_token || typeof json.expires_in !== "number") {
+              log.error("openai oauth token response missing fields")
+              return { type: "failed" }
+            }
+
+            return {
+              type: "success",
+              refresh: json.refresh_token,
+              access: json.access_token,
+              expires: Date.now() + json.expires_in * 1000,
+            }
+          },
+        }
+      },
+    },
+    {
+      label: "Manually enter API Key",
+      type: "api",
+    },
+  ],
+  async loader(getAuth, provider) {
+    const auth = await getAuth()
+    if (!auth || auth.type !== "oauth") return {}
+
+    // Note: Full OpenAI Codex support would require additional request transformations
+    // For now, this provides basic OAuth token management
+    return {
+      apiKey: "",
+      baseURL: "https://chatgpt.com/backend-api",
+      async fetch(input: RequestInfo | URL, init?: RequestInit) {
+        let currentAuth = await getAuth()
+        if (!currentAuth || currentAuth.type !== "oauth") return fetch(input, init)
+
+        // Refresh token if expired
+        if (!currentAuth.access || currentAuth.expires < Date.now()) {
+          log.info("refreshing openai oauth token")
+          const response = await fetch(OPENAI_TOKEN_URL, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams({
+              grant_type: "refresh_token",
+              refresh_token: currentAuth.refresh,
+              client_id: OPENAI_CLIENT_ID,
+            }),
+          })
+
+          if (!response.ok) {
+            throw new Error(`Token refresh failed: ${response.status}`)
+          }
+
+          const json = await response.json()
+          await Auth.set("openai", {
+            type: "oauth",
+            refresh: json.refresh_token,
+            access: json.access_token,
+            expires: Date.now() + json.expires_in * 1000,
+          })
+          currentAuth = {
+            type: "oauth",
+            refresh: json.refresh_token,
+            access: json.access_token,
+            expires: Date.now() + json.expires_in * 1000,
+          }
+        }
+
+        const headers: Record<string, string> = {
+          ...(init?.headers as Record<string, string>),
+          authorization: `Bearer ${currentAuth.access}`,
+        }
+        delete headers["x-api-key"]
+
+        return fetch(input, {
+          ...init,
+          headers,
+        })
+      },
+    }
+  },
+}
+
+/**
  * Registry of all auth plugins
  */
 const plugins: Record<string, AuthPlugin> = {
   anthropic: AnthropicPlugin,
   "github-copilot": GitHubCopilotPlugin,
+  openai: OpenAIPlugin,
 }
 
 /**
