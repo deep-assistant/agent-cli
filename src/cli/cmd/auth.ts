@@ -312,18 +312,24 @@ export const AuthLoginCommand = cmd({
       return
     }
 
-    // Some providers have hints about where to get API keys
-    if (provider === "vercel") {
-      prompts.log.info("You can create an api key at https://vercel.link/ai-gateway-token")
+    // Provider-specific instructions for getting API keys
+    const apiKeyUrls: Record<string, string> = {
+      openai: "https://platform.openai.com/api-keys",
+      anthropic: "https://console.anthropic.com/settings/keys",
+      google: "https://aistudio.google.com/app/apikey",
+      vercel: "https://vercel.link/ai-gateway-token",
+      openrouter: "https://openrouter.ai/keys",
+      groq: "https://console.groq.com/keys",
+      mistral: "https://console.mistral.ai/api-keys",
+      cohere: "https://dashboard.cohere.com/api-keys",
+      perplexity: "https://www.perplexity.ai/settings/api",
+      togetherai: "https://api.together.xyz/settings/api-keys",
+      deepseek: "https://platform.deepseek.com/api_keys",
+      xai: "https://console.x.ai",
     }
-    if (provider === "openai") {
-      prompts.log.info("You can create an api key at https://platform.openai.com/api-keys")
-    }
-    if (provider === "anthropic") {
-      prompts.log.info("You can create an api key at https://console.anthropic.com/settings/keys")
-    }
-    if (provider === "google") {
-      prompts.log.info("You can create an api key at https://aistudio.google.com/app/apikey")
+
+    if (apiKeyUrls[provider]) {
+      prompts.log.info(`You can create an API key at ${apiKeyUrls[provider]}`)
     }
 
     // Fallback: prompt for API key
