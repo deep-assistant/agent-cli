@@ -29,6 +29,7 @@ Despite PR #35's fix that implemented minimal system messages for low-limit mode
 ### Background: PR #35 Fix (Merged 2025-12-11)
 
 PR #35 attempted to fix issue #34 by:
+
 1. Detecting models with low token limits (qwen3-32b, mixtral-8x7b-32768)
 2. Using `--system-message` flag with a minimal 15-token message
 3. Expected behavior: Skip the default ~12,000 token system message
@@ -38,26 +39,31 @@ PR #35 attempted to fix issue #34 by:
 ### Current Failure: Run #20149051402 (2025-12-11 22:11:29)
 
 **Test Execution**:
+
 ```bash
 node scripts/test-model-simple.mjs "groq/qwen/qwen3-32b"
 ```
 
 **Input Message**:
+
 ```json
-{"message":"What is 2 + 2? Answer with just the number."}
+{ "message": "What is 2 + 2? Answer with just the number." }
 ```
 
 **System Message Override** (from test script):
+
 ```
 You are a helpful AI assistant. Answer questions accurately and concisely.
 ```
 
 **Log Output**:
+
 ```
 ℹ️  Using minimal system message (low token limit model detected)
 ```
 
 **API Error**:
+
 ```json
 {
   "error": {
@@ -73,6 +79,7 @@ You are a helpful AI assistant. Answer questions accurately and concisely.
 ### The Paradox: Minimal System Message Still Causes 9,059 Tokens
 
 The test script correctly:
+
 1. ✅ Detects the low-limit model
 2. ✅ Passes `--system-message` with a minimal message (~15 tokens)
 3. ✅ Logs confirmation: "Using minimal system message"
@@ -85,32 +92,36 @@ But the request still contains **9,059 tokens**. Where are they coming from?
 
 ```typescript
 async function resolveSystemPrompt(input: {
-  system?: string
-  appendSystem?: string
-  agent: Agent.Info
-  providerID: string
-  modelID: string
+  system?: string;
+  appendSystem?: string;
+  agent: Agent.Info;
+  providerID: string;
+  modelID: string;
 }) {
-  let system = SystemPrompt.header(input.providerID)  // Line 609: Empty for Groq
+  let system = SystemPrompt.header(input.providerID); // Line 609: Empty for Groq
   system.push(
     ...(() => {
-      if (input.system) return [input.system]  // Line 612: Should return minimal message ONLY
-      const base = input.agent.prompt ? [input.agent.prompt] : SystemPrompt.provider(input.modelID)
+      if (input.system) return [input.system]; // Line 612: Should return minimal message ONLY
+      const base = input.agent.prompt
+        ? [input.agent.prompt]
+        : SystemPrompt.provider(input.modelID);
       if (input.appendSystem) {
-        return [base[0] + "\n" + input.appendSystem]
+        return [base[0] + '\n' + input.appendSystem];
       }
-      return base  // Would be qwen.txt (~2,770 tokens)
-    })(),
-  )
-  if (!input.system) {  // Line 620: Should skip when system override provided
-    system.push(...(await SystemPrompt.environment()))  // ~1,000-2,000 tokens
-    system.push(...(await SystemPrompt.custom()))  // ~1,000-2,000 tokens (CLAUDE.md, etc.)
+      return base; // Would be qwen.txt (~2,770 tokens)
+    })()
+  );
+  if (!input.system) {
+    // Line 620: Should skip when system override provided
+    system.push(...(await SystemPrompt.environment())); // ~1,000-2,000 tokens
+    system.push(...(await SystemPrompt.custom())); // ~1,000-2,000 tokens (CLAUDE.md, etc.)
   }
-  return system
+  return system;
 }
 ```
 
 **Expected Behavior** when `--system-message` is provided:
+
 - Line 612: `input.system` exists → returns `["minimal message"]`
 - Line 620: `!input.system` is false → skips environment and custom instructions
 - **Total**: ~15 tokens (minimal message only)
@@ -121,20 +132,21 @@ async function resolveSystemPrompt(input: {
 
 Token breakdown analysis:
 
-| Component | Expected (with fix) | Observed | Source |
-|-----------|-------------------|----------|--------|
-| Minimal system message | ~15 tokens | ? | `--system-message` arg |
-| Environment info | 0 (skipped) | ? | Should be skipped |
-| Custom instructions | 0 (skipped) | ? | Should be skipped |
-| User message | ~15 tokens | ~15 tokens | "What is 2 + 2?..." |
-| **UNKNOWN SOURCE** | **0 tokens** | **~9,029 tokens** | ❓ |
-| **Total** | **~30 tokens** | **9,059 tokens** | |
+| Component              | Expected (with fix) | Observed          | Source                 |
+| ---------------------- | ------------------- | ----------------- | ---------------------- |
+| Minimal system message | ~15 tokens          | ?                 | `--system-message` arg |
+| Environment info       | 0 (skipped)         | ?                 | Should be skipped      |
+| Custom instructions    | 0 (skipped)         | ?                 | Should be skipped      |
+| User message           | ~15 tokens          | ~15 tokens        | "What is 2 + 2?..."    |
+| **UNKNOWN SOURCE**     | **0 tokens**        | **~9,029 tokens** | ❓                     |
+| **Total**              | **~30 tokens**      | **9,059 tokens**  |                        |
 
 ### Possible Explanations
 
 #### Theory 1: Prompt Caching Initial Load
 
 According to [Groq's prompt caching documentation](https://console.groq.com/docs/prompt-caching):
+
 - Cached tokens don't count towards TPM limits
 - **BUT**: First request has NO cache hit (cache doesn't exist yet)
 - All tokens in the first request count towards TPM
@@ -146,10 +158,12 @@ However, this doesn't explain where 9,059 tokens are coming from if we're only s
 **Possibility**: The `--system-message` flag might not be reaching `resolveSystemPrompt()` correctly.
 
 **Evidence**:
+
 - Test script shows "Using minimal system message" (logging works)
 - But actual API call might not have the override applied
 
 **Investigation Needed**:
+
 - Add debug logging to `resolveSystemPrompt()` to see what `input.system` contains
 - Verify server mode vs direct mode behavior
 - Check if there's a caching or build issue
@@ -157,10 +171,12 @@ However, this doesn't explain where 9,059 tokens are coming from if we're only s
 #### Theory 3: Default qwen.txt Still Being Loaded
 
 The qwen.txt prompt file contains:
+
 - **9,693 characters**
 - Estimated **~2,770 tokens** (at 3.5 chars/token)
 
 But if environment (~1,500 tokens) and other components are added:
+
 - qwen.txt: ~2,770 tokens
 - Environment: ~1,500 tokens
 - File tree: ~2,000 tokens
@@ -175,6 +191,7 @@ Still doesn't explain 9,059 tokens, but closer than the "minimal message only" s
 #### Theory 4: Environment Information Still Included
 
 The environment information includes:
+
 - Working directory path
 - Git repository status
 - Platform information
@@ -186,6 +203,7 @@ If `SystemPrompt.environment()` is still being called, the file tree alone could
 #### Theory 5: Hidden Agent Prompt
 
 Looking at the default "build" agent configuration (`src/agent/agent.ts:52-58`):
+
 ```typescript
 build: {
   name: "build",
@@ -209,22 +227,26 @@ Based on research from [Groq Rate Limits documentation](https://console.groq.com
 **Key Insight**: "Request too large" error (HTTP 413) indicates that a **single request exceeds what can be processed within the TPM constraint**.
 
 For a model with 6,000 TPM:
+
 - A single request with 9,059 tokens would require **>1 minute** to process
 - Groq rejects such requests immediately with HTTP 413
 
 ### Prompt Caching and Rate Limits
 
 From [Groq Prompt Caching docs](https://console.groq.com/docs/prompt-caching):
+
 - ✅ Cached tokens **do not** count towards TPM limits
 - ❌ **First request** has no cache (cache doesn't exist yet)
 - All tokens in first request count towards TPM
 
 From [Claude Rate Limits docs](https://docs.claude.com/en/api/rate-limits):
+
 - Similar behavior: Uncached tokens count towards ITPM
 - Cached tokens provide "free" throughput above nominal limits
 - With 80% cache hit rate, effective throughput can be 5x nominal rate
 
 **Implication for our issue**:
+
 - Even if caching works on subsequent requests, the **first CI test run** will always hit this limit
 - Need to reduce first request to <6,000 tokens
 
@@ -235,6 +257,7 @@ From [Claude Rate Limits docs](https://docs.claude.com/en/api/rate-limits):
 This issue **blocks CI** and **prevents using low-cost models** like qwen3-32b.
 
 **Affected Systems**:
+
 1. ✗ CI/CD Pipeline - Automated tests fail
 2. ✗ Model Compatibility - Cannot use efficient smaller models
 3. ✗ Cost Optimization - Forced to use higher-tier services
@@ -243,6 +266,7 @@ This issue **blocks CI** and **prevents using low-cost models** like qwen3-32b.
 ### Models Affected
 
 Models with TPM ≤ 6,000 tokens on Groq free tier:
+
 - ❌ `groq/qwen/qwen3-32b` (6,000 TPM)
 - ❌ `groq/mixtral-8x7b-32768` (6,000 TPM)
 - ❌ `groq/llama-3.1-8b-instant` (6,000 TPM per [community reports](https://github.com/elizaOS/eliza/issues/4040))
@@ -261,6 +285,7 @@ Models with TPM ≤ 6,000 tokens on Groq free tier:
 **Goal**: Find where the 9,029 extra tokens are coming from
 
 **Actions**:
+
 1. Add debug logging to `resolveSystemPrompt()` to capture:
    - `input.system` value
    - Each component being added to system array
@@ -270,11 +295,13 @@ Models with TPM ≤ 6,000 tokens on Groq free tier:
 4. Fix the actual bug causing tokens to be added despite override
 
 **Pros**:
+
 - Fixes root cause
 - Benefits all models
 - No workarounds needed
 
 **Cons**:
+
 - Requires investigation time
 - May uncover deeper architectural issues
 
@@ -283,25 +310,29 @@ Models with TPM ≤ 6,000 tokens on Groq free tier:
 **Goal**: Bypass all system prompt logic for ultra-low-limit models
 
 **Implementation**: Create a new `--ultra-minimal` flag that:
+
 1. Skips `resolveSystemPrompt()` entirely
 2. Uses a hardcoded 5-token system message: "You are helpful."
 3. No environment, no custom, no agent prompt, no headers
 
 **Example**:
+
 ```javascript
 // In scripts/test-model-simple.mjs
-const ultraLowLimitModels = ['qwen3-32b', 'mixtral-8x7b-32768']
-if (ultraLowLimitModels.some(m => modelId.includes(m))) {
-  args.push('--ultra-minimal')
+const ultraLowLimitModels = ['qwen3-32b', 'mixtral-8x7b-32768'];
+if (ultraLowLimitModels.some((m) => modelId.includes(m))) {
+  args.push('--ultra-minimal');
 }
 ```
 
 **Pros**:
+
 - Immediate workaround for CI
 - Guaranteed minimal tokens
 - Can be implemented today
 
 **Cons**:
+
 - Doesn't fix root cause
 - Reduces agent capabilities significantly
 - Hack/workaround rather than proper fix
@@ -311,22 +342,33 @@ if (ultraLowLimitModels.some(m => modelId.includes(m))) {
 **Hypothesis**: Server mode might have different behavior for system message handling
 
 **Implementation**:
+
 ```javascript
 // In scripts/test-model-simple.mjs
-const args = ['run', join(projectRoot, 'src/index.js'), '--model', modelId, '--server', 'false']
+const args = [
+  'run',
+  join(projectRoot, 'src/index.js'),
+  '--model',
+  modelId,
+  '--server',
+  'false',
+];
 ```
 
 **Rationale**:
+
 - Default is `--server true` (line 419 in src/index.js)
 - Server mode goes through HTTP API layer
 - Direct mode calls `SessionPrompt.prompt()` directly
 - May have different variable passing behavior
 
 **Pros**:
+
 - Simple one-line change to test
 - If it works, identifies the bug location
 
 **Cons**:
+
 - May not solve the issue
 - Server mode is default for a reason (better isolation)
 
@@ -335,25 +377,29 @@ const args = ['run', join(projectRoot, 'src/index.js'), '--model', modelId, '--s
 **Goal**: Add automatic token management based on model limits
 
 **Implementation**:
+
 1. Add `tokenBudget` field to model metadata in `models.ts`
 2. In `resolveSystemPrompt()`, check if model has low token budget
 3. Automatically select minimal components to fit budget
 4. Provide clear error if user message alone exceeds budget
 
 **Example Logic**:
+
 ```typescript
 if (model.tokenBudget && model.tokenBudget < 10000) {
   // Ultra-minimal mode for low-budget models
-  return [input.system || "You are helpful."]
+  return [input.system || 'You are helpful.'];
 }
 ```
 
 **Pros**:
+
 - Automatic handling
 - Works for all models
 - No manual configuration needed
 
 **Cons**:
+
 - Requires model metadata updates
 - Complex logic to maintain
 - May reduce functionality for low-limit models
@@ -365,6 +411,7 @@ if (model.tokenBudget && model.tokenBudget < 10000) {
 **Options**:
 
 **A) Pre-warm cache** before tests:
+
 ```bash
 # Send a dummy request to warm up cache
 echo '{"message":"hi"}' | bun run src/index.js --model groq/qwen/qwen3-32b
@@ -374,16 +421,19 @@ node scripts/test-model-simple.mjs groq/qwen/qwen3-32b
 ```
 
 **B) Skip low-limit model tests** in CI:
+
 ```yaml
 # In .github/workflows/test.yml
 if: ${{ !contains(matrix.model, 'qwen3-32b') }}
 ```
 
 **Pros**:
+
 - Immediate CI fix
 - No code changes needed (option B)
 
 **Cons**:
+
 - Doesn't fix underlying issue
 - Pre-warming may not work (caches expire)
 - Skipping tests reduces coverage
@@ -395,6 +445,7 @@ if: ${{ !contains(matrix.model, 'qwen3-32b') }}
 **Goal**: Understand where 9,059 tokens are coming from
 
 **Actions**:
+
 1. ✅ Create experiment script with debug logging
 2. ✅ Add token counting to `resolveSystemPrompt()`
 3. ✅ Run local test with debugging enabled
@@ -409,16 +460,19 @@ if: ${{ !contains(matrix.model, 'qwen3-32b') }}
 **Possible Scenarios**:
 
 **Scenario A**: `--system-message` not being passed correctly
+
 - Fix argument parsing or server API handling
 - Verify fix with local tests
 - Commit and push
 
 **Scenario B**: Environment/custom still being loaded
+
 - Add additional check in `resolveSystemPrompt()`
 - Ensure `if (!input.system)` logic is correct
 - Verify all code paths
 
 **Scenario C**: Unknown token source (caching, headers, etc.)
+
 - Investigate and document the source
 - Implement targeted fix
 - Add regression test
@@ -430,6 +484,7 @@ if: ${{ !contains(matrix.model, 'qwen3-32b') }}
 **Goal**: Ensure CI tests pass after fix
 
 **Actions**:
+
 1. Push fix to branch
 2. Monitor CI run
 3. Verify token count in logs
@@ -442,6 +497,7 @@ if: ${{ !contains(matrix.model, 'qwen3-32b') }}
 **Goal**: Prevent similar issues in future
 
 **Actions**:
+
 1. Add token budget to model metadata
 2. Implement automatic token management
 3. Add CI job that validates token usage
@@ -555,13 +611,13 @@ Estimated tokens: 9693 / 3.5 ≈ 2,770 tokens
 ### C. Test Script Configuration (Post-PR #35)
 
 ```javascript
-const lowLimitModels = [
-  'qwen3-32b',
-  'mixtral-8x7b-32768',
-];
+const lowLimitModels = ['qwen3-32b', 'mixtral-8x7b-32768'];
 
-const needsMinimalSystem = lowLimitModels.some(model => modelId.includes(model));
-const minimalSystemMessage = 'You are a helpful AI assistant. Answer questions accurately and concisely.';
+const needsMinimalSystem = lowLimitModels.some((model) =>
+  modelId.includes(model)
+);
+const minimalSystemMessage =
+  'You are a helpful AI assistant. Answer questions accurately and concisely.';
 
 if (needsMinimalSystem) {
   args.push('--system-message', minimalSystemMessage);

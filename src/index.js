@@ -83,7 +83,7 @@ function readStdin() {
 async function runAgentMode(argv) {
   // Set verbose mode if requested via CLI flag
   if (argv.verbose) {
-    Flag.setVerbose(true)
+    Flag.setVerbose(true);
   }
 
   // Parse model argument (handle model IDs with slashes like groq/qwen/qwen3-32b)
@@ -551,8 +551,9 @@ async function main() {
       })
       .option('verbose', {
         type: 'boolean',
-        description: 'Enable verbose mode to debug API requests (shows system prompt, token counts, etc.)',
-        default: false
+        description:
+          'Enable verbose mode to debug API requests (shows system prompt, token counts, etc.)',
+        default: false,
       })
       .option('use-existing-claude-oauth', {
         type: 'boolean',

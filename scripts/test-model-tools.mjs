@@ -26,7 +26,9 @@ if (verbose) {
 const modelId = cliArgs[0];
 if (!modelId) {
   console.error('Error: Model ID is required');
-  console.error('Usage: node scripts/test-model-tools.mjs <model-id> [--verbose]');
+  console.error(
+    'Usage: node scripts/test-model-tools.mjs <model-id> [--verbose]'
+  );
   process.exit(1);
 }
 
@@ -80,7 +82,12 @@ const logFile = join(projectRoot, 'test-output-tools.log');
 const logStream = createWriteStream(logFile);
 
 // Build command arguments
-const spawnArgs = ['run', join(projectRoot, 'src/index.js'), '--model', modelId];
+const spawnArgs = [
+  'run',
+  join(projectRoot, 'src/index.js'),
+  '--model',
+  modelId,
+];
 
 // Add minimal system message for low-limit models
 if (needsMinimalSystem) {
