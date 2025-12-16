@@ -91,8 +91,10 @@ jobs:
         run: npm run check:file-size
 
   # Test with Bun (this project is Bun-only)
+  # Only runs unit tests (no external dependencies/API calls)
+  # Integration/e2e tests are in integration-tests.yml and model-tests.yml (manual execution)
   test:
-    name: Test (Bun on ${{ matrix.os }})
+    name: Unit Tests (Bun on ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     needs: [changeset-check]
     if: always() && (github.event_name == 'push' || needs.changeset-check.result == 'success')
@@ -111,8 +113,8 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: Run tests
-        run: bun test
+      - name: Run unit tests
+        run: bun test tests/json-standard-unit.test.js
 
   # Release - only runs on main after tests pass (for push events)
   release:

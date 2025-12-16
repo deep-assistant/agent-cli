@@ -25,6 +25,14 @@ export default [
         // Runtime-specific globals
         Bun: 'readonly',
         Deno: 'readonly',
+        // Timer globals (Bun/Node.js)
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        // Other globals
+        require: 'readonly',
+        AbortController: 'readonly',
       },
     },
     rules: {
