@@ -3,6 +3,7 @@
 ## Issue Discovery Timeline
 
 ### 2025-12-16
+
 - **12:43:13** - User runs `agent auth list` command
 - **12:43:13 +38ms** - Debug output appears: `INFO  2025-12-16T12:43:13 +38ms service=models.dev file={} refreshing`
 - User notices debug output breaking clean CLI UI
@@ -11,6 +12,7 @@
 ## Technical Execution Timeline
 
 ### Module Load Phase (before command execution)
+
 ```
 T+0ms: User executes: agent auth list
 T+0ms: Bun runtime starts, loads src/index.js
@@ -25,6 +27,7 @@ T+20ms: All modules loaded, yargs initialized
 ```
 
 ### Command Parsing Phase
+
 ```
 T+25ms: yargs parses process.argv
 T+26ms: Identifies command: 'auth', subcommand: 'list'
@@ -33,6 +36,7 @@ T+28ms: yargs routes to AuthCommand
 ```
 
 ### Command Execution Phase (THE PROBLEM OCCURS HERE)
+
 ```
 T+30ms: AuthListCommand.handler() invoked (auth.ts:26)
          ⚠️  Log.init() was NEVER called
@@ -77,6 +81,7 @@ T+260ms: Command completes
 ## Comparison with Working Commands
 
 ### agent run --verbose (WORKS CORRECTLY)
+
 ```
 T+0ms: User executes: echo "test" | agent run --verbose
 T+20ms: Modules loaded
@@ -91,6 +96,7 @@ T+50ms: Agent starts, logs are visible (as intended)
 ```
 
 ### agent (default mode, no --verbose)
+
 ```
 T+0ms: User pipes input: echo "test" | agent
 T+20ms: Modules loaded
@@ -106,17 +112,18 @@ T+120ms: Agent starts with clean output
 
 ## The Critical Difference
 
-| Command | Log.init() Called? | write points to | Result |
-|---------|-------------------|-----------------|--------|
-| `agent` (piped) | ✅ Yes (line 182) | Log file | ✅ Clean output |
-| `agent --verbose` (piped) | ✅ Yes (line 182, print=true) | stderr | ✅ Intentional debug |
-| `agent run --verbose` | ✅ Yes (run.ts:148) | stderr | ✅ Intentional debug |
-| `agent auth list` | ❌ **NO** | stderr | 🔴 **Bug: Unintended debug** |
-| `agent mcp list` | ❌ **NO** | stderr | 🔴 **Bug: Unintended debug** |
+| Command                   | Log.init() Called?            | write points to | Result                       |
+| ------------------------- | ----------------------------- | --------------- | ---------------------------- |
+| `agent` (piped)           | ✅ Yes (line 182)             | Log file        | ✅ Clean output              |
+| `agent --verbose` (piped) | ✅ Yes (line 182, print=true) | stderr          | ✅ Intentional debug         |
+| `agent run --verbose`     | ✅ Yes (run.ts:148)           | stderr          | ✅ Intentional debug         |
+| `agent auth list`         | ❌ **NO**                     | stderr          | 🔴 **Bug: Unintended debug** |
+| `agent mcp list`          | ❌ **NO**                     | stderr          | 🔴 **Bug: Unintended debug** |
 
 ## Background Timer Impact
 
 Every 60 minutes (models.ts:98):
+
 ```
 T+0min: Command executes, finishes
 T+60min: setInterval callback fires
@@ -139,12 +146,14 @@ Based on code analysis:
 ## Impact Timeline
 
 Since the CLI commands were added, every invocation has been showing debug logs:
+
 - `agent auth list` - Shows "refreshing" message
 - `agent auth login` - May show various provider/auth logs
 - `agent mcp *` - May show MCP operation logs
 - Any other CLI command that triggers logging
 
 **User Impact**:
+
 - Confusing output for users expecting clean CLI interfaces
 - Breaks scripting/automation (stderr pollution)
 - Makes the tool look unpolished/buggy

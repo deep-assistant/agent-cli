@@ -15,9 +15,11 @@ This debug output should only be shown when the `--verbose` flag is provided.
 ### The Problem Chain
 
 1. **Default Logging Behavior (src/util/log.ts:55)**
+
    ```typescript
    let write = (msg: any) => Bun.stderr.write(msg);
    ```
+
    - By default, all log messages write directly to `stderr`
    - This happens **before** `Log.init()` is called
    - The default log level is `INFO` (line 19)
@@ -29,9 +31,11 @@ This debug output should only be shown when the `--verbose` flag is provided.
    - **Other CLI commands (mcp, models, stats, export, etc.)**: Also don't call `Log.init()`
 
 3. **Early Logger Creation (src/provider/models.ts:8)**
+
    ```typescript
    const log = Log.create({ service: 'models.dev' });
    ```
+
    - Logger is created at module import time
    - Uses default `write` function pointing to `stderr`
    - Any calls to `log.info()` will output to stderr by default
@@ -39,6 +43,7 @@ This debug output should only be shown when the `--verbose` flag is provided.
 4. **Auth List Command Flow**
 
    **Call Chain:**
+
    ```
    user runs: agent auth list
    ↓
@@ -60,6 +65,7 @@ This debug output should only be shown when the `--verbose` flag is provided.
 5. **Why Log.init() Matters**
 
    When `Log.init({ print: false })` is called (src/util/log.ts:57-75):
+
    ```typescript
    export async function init(options: Options) {
      if (options.level) level = options.level;
@@ -101,6 +107,7 @@ This debug output should only be shown when the `--verbose` flag is provided.
 ### Additional Issues
 
 **Background Refresh Timer (src/provider/models.ts:98)**
+
 ```typescript
 setInterval(() => ModelsDev.refresh(), 60 * 1000 * 60).unref();
 ```
@@ -132,6 +139,7 @@ Based on analysis, the following CLI commands are affected (they don't initializ
    - Any export operations ✗
 
 **Not Affected:**
+
 - `agent` (default mode) ✓ - Calls Log.init() at line 182
 - `agent run` ✓ - Calls Log.init() at line 115 (when verbose)
 
@@ -159,11 +167,13 @@ To fix this issue, we need to:
 ## Proposed Solution
 
 Add a global middleware or initialization in `src/index.js` that:
+
 - Calls `Log.init({ print: false })` before any commands execute
 - Allows `--verbose` flag to enable `Log.init({ print: true, level: 'DEBUG' })`
 - Applies to ALL commands, not just agent mode
 
 This ensures:
+
 - By default: logs go to files in `~/.local/share/opencode/log/`
 - With `--verbose`: logs print to stderr for debugging
 - Clean CLI UI for all commands without debug pollution
