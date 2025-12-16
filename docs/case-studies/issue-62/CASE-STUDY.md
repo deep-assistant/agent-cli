@@ -359,9 +359,9 @@ Add validation middleware:
 
 The original error logs are stored in:
 
-- `./logs/error-1-empty-system-message.json`
-- `./logs/error-2-claude-code-credential.json`
-- `./logs/error-3-rate-limit.json`
+- `./error-logs/error-1-empty-system-message.json`
+- `./error-logs/error-2-claude-code-credential.json`
+- `./error-logs/error-3-rate-limit.json`
 
 ---
 
