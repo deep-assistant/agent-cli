@@ -19,8 +19,21 @@ import { Flag } from './flag/flag.ts';
 import { FormatError } from './cli/error.ts';
 import { UI } from './cli/ui.ts';
 import { createRequire } from 'module';
+import { readFileSync } from 'fs';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+
 const require = createRequire(import.meta.url);
-const pkg = require('../package.json');
+let pkg;
+try {
+  pkg = require('../package.json');
+} catch (_e) {
+  // Fallback: read package.json directly
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  const pkgPath = join(__dirname, '../package.json');
+  const pkgContent = readFileSync(pkgPath, 'utf8');
+  pkg = JSON.parse(pkgContent);
+}
 
 // Track if any errors occurred during execution
 let hasError = false;
