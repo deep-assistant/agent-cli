@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.1.0
+
+### Minor Changes
+
+- 2bcef5f: Add support for google/gemini-3-pro model alias
+  - Added `google/gemini-3-pro` as an alias to `gemini-3-pro-preview`
+  - Updated README.md with Google Gemini usage examples
+  - Created comprehensive case study in docs/case-studies/issue-53/
+  - Fixes ProviderModelNotFoundError when using google/gemini-3-pro
+
+  This change allows users to use the commonly expected model name `gemini-3-pro` while maintaining compatibility with Google's official `gemini-3-pro-preview` identifier.
+
+### Patch Changes
+
+- 86f24ac: Add comprehensive image validation to prevent API errors
+  - Added magic byte validation for PNG, JPEG/JPG, GIF, BMP, WebP, TIFF, SVG, ICO, and AVIF formats
+  - Prevents "Could not process image" API errors from invalid files
+  - Added `VERIFY_IMAGES_AT_READ_TOOL` environment variable for opt-out (enabled by default)
+  - Enhanced error messages with hex dump debugging information
+  - Comprehensive test suite with 6+ test cases
+  - Fixes #38 and prevents session crashes from corrupted image files
+
 ## 0.0.17
 
 ### Patch Changes
