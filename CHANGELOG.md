@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.15
+
+### Patch Changes
+
+- 3a5fad7: Fix debug output appearing in CLI commands - logs are now suppressed by default and only shown with --verbose flag. This fixes the issue where commands like `agent auth list` displayed debug messages that broke the clean CLI UI.
+
 ## 0.0.14
 
 ### Patch Changes
