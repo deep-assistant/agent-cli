@@ -296,6 +296,7 @@ The agent supports the Model Context Protocol (MCP), allowing you to extend func
 Microsoft's Playwright MCP server provides browser automation capabilities using Playwright. This enables the agent to interact with web pages through structured accessibility snapshots.
 
 **Requirements:**
+
 - Node.js 18 or newer (for running the Playwright MCP server)
 - Bun (for running the agent itself)
 
