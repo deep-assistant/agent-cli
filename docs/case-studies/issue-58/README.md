@@ -29,6 +29,7 @@ The release v0.1.0 shows two bugs:
 **Release URL:** https://github.com/link-assistant/agent/releases/tag/v0.1.0
 
 **Release Body (Raw):**
+
 ```
 ### Minor Changes
 
@@ -84,6 +85,7 @@ const patchChangesMatchNoHash = currentBody.match(
 ```
 
 **Root Cause:**
+
 - The script ONLY matches `### Patch Changes` sections
 - When a release contains `### Minor Changes` or `### Major Changes`, the regex doesn't match
 - The script exits early with "⚠️ Could not parse patch changes from release notes" (line 113)
@@ -94,6 +96,7 @@ const patchChangesMatchNoHash = currentBody.match(
 **Related to Bug #1**
 
 Because the script exits early when it can't find `### Patch Changes`, it never reaches the PR detection logic (lines 136-182). Therefore:
+
 - No commit SHA is extracted
 - No PR lookup is performed
 - No PR link is added to the release notes
@@ -137,12 +140,15 @@ Modify `scripts/format-release-notes.mjs` to:
    - Remove the section header entirely from the formatted output
 
 2. Update regex patterns:
+
 ```javascript
 // Match any changeset type (Major, Minor, or Patch)
-const changesPattern = /### (Major|Minor|Patch) Changes\s*\n\s*-\s+(?:([a-f0-9]+):\s+)?(.+?)$/s;
+const changesPattern =
+  /### (Major|Minor|Patch) Changes\s*\n\s*-\s+(?:([a-f0-9]+):\s+)?(.+?)$/s;
 ```
 
 3. Format output without section headers:
+
 ```javascript
 // Remove "### X Changes" header entirely
 const formattedBody = `${cleanDescription}`;
@@ -151,6 +157,7 @@ const formattedBody = `${cleanDescription}`;
 ### Fix for Template Repository
 
 Create an issue in the template repository:
+
 - **Repository:** link-foundation/js-ai-driven-development-pipeline-template
 - **Title:** Release formatting script only handles Patch changes, not Minor/Major
 - **Description:** Document the bug and provide the fix
@@ -178,6 +185,7 @@ This change allows users to use the commonly expected model name `gemini-3-pro` 
 ```
 
 **Key Changes:**
+
 1. ✅ NO "### Minor Changes" header
 2. ✅ Clean description starting directly with the content
 3. ✅ PR link detected and shown (#56)
@@ -188,6 +196,7 @@ This change allows users to use the commonly expected model name `gemini-3-pro` 
 ### Changesets Documentation
 
 According to [@changesets/cli](https://github.com/changesets/changesets) documentation:
+
 - Changesets generate CHANGELOG entries with section headers like "### Major Changes", "### Minor Changes", "### Patch Changes"
 - These are useful for the CHANGELOG.md file to organize changes by type
 - However, for GitHub Releases, these headers are redundant because:
@@ -197,6 +206,7 @@ According to [@changesets/cli](https://github.com/changesets/changesets) documen
 ### Best Practices for Release Notes
 
 Research indicates that clean release notes should:
+
 1. Start directly with the content (no categorization headers)
 2. Include links to related PRs for context
 3. Include package version badge for quick reference
