@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.13
+
+### Patch Changes
+
+- 4b4c0ea: Fix ESC key handling in CLI commands - pressing ESC now exits gracefully without showing error messages or help text
+
 ## 0.0.12
 
 ### Patch Changes
