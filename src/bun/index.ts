@@ -4,6 +4,7 @@ import { Log } from '../util/log';
 import path from 'path';
 import { NamedError } from '../util/error';
 import { readableStreamToText } from 'bun';
+import { Flag } from '../flag/flag';
 
 export namespace BunProc {
   const log = Log.create({ service: 'bun' });
@@ -43,7 +44,10 @@ export namespace BunProc {
       stderr,
     });
     if (code !== 0) {
-      throw new Error(`Command failed with exit code ${result.exitCode}`);
+      const parts = [`Command failed with exit code ${result.exitCode}`];
+      if (stderr) parts.push(`stderr: ${stderr}`);
+      if (stdout) parts.push(`stdout: ${stdout}`);
+      throw new Error(parts.join('\n'));
     }
     return result;
   }
@@ -57,6 +61,7 @@ export namespace BunProc {
     z.object({
       pkg: z.string(),
       version: z.string(),
+      details: z.string().optional(),
     })
   );
 
@@ -69,6 +74,20 @@ export namespace BunProc {
       return result;
     });
     if (parsed.dependencies[pkg] === version) return mod;
+
+    // Check for dry-run mode
+    if (Flag.OPENCODE_DRY_RUN) {
+      log.info(
+        '[DRY RUN] Would install package (skipping actual installation)',
+        {
+          pkg,
+          version,
+          targetPath: mod,
+        }
+      );
+      // In dry-run mode, pretend the package is installed
+      return mod;
+    }
 
     // Build command arguments
     const args = [
@@ -92,13 +111,20 @@ export namespace BunProc {
     await BunProc.run(args, {
       cwd: Global.Path.cache,
     }).catch((e) => {
+      log.error('package installation failed', {
+        pkg,
+        version,
+        error: e instanceof Error ? e.message : String(e),
+        stack: e instanceof Error ? e.stack : undefined,
+      });
       throw new InstallFailedError(
-        { pkg, version },
+        { pkg, version, details: e instanceof Error ? e.message : String(e) },
         {
           cause: e,
         }
       );
     });
+    log.info('package installed successfully', { pkg, version });
     parsed.dependencies[pkg] = version;
     await Bun.write(pkgjson.name!, JSON.stringify(parsed, null, 2));
     return mod;
