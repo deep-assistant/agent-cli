@@ -211,7 +211,7 @@ echo '{"message":"search web","tools":[{"name":"websearch","params":{"query":"Re
 **opencode (requires OPENCODE_EXPERIMENTAL_EXA=true):**
 
 ```bash
-echo '{"message":"search web","tools":[{"name":"websearch","params":{"query":"TypeScript latest features"}}]}' | OPENCODE_EXPERIMENTAL_EXA=true opencode run --format json --model opencode/grok-code
+echo '{"message":"search web","tools":[{"name":"websearch","params":{"query":"TypeScript latest features"}}]}' | opencode run --format json --model opencode/grok-code
 ```
 
 ### codesearch Tool
@@ -229,7 +229,7 @@ echo '{"message":"search code","tools":[{"name":"codesearch","params":{"query":"
 **opencode (requires OPENCODE_EXPERIMENTAL_EXA=true):**
 
 ```bash
-echo '{"message":"search code","tools":[{"name":"codesearch","params":{"query":"React hooks implementation"}}]}' | OPENCODE_EXPERIMENTAL_EXA=true opencode run --format json --model opencode/grok-code
+echo '{"message":"search code","tools":[{"name":"codesearch","params":{"query":"React hooks implementation"}}]}' | opencode run --format json --model opencode/grok-code
 ```
 
 ## Execution Tools
@@ -248,8 +248,8 @@ echo '{"message":"run batch","tools":[{"name":"batch","params":{"tool_calls":[{"
 
 ```bash
 # Create config file first
-mkdir -p .opencode
-echo '{"experimental":{"batch_tool":true}}' > .opencode/config.json
+mkdir -p .link-assistant-agent
+echo '{"experimental":{"batch_tool":true}}' > .link-assistant-agent/opencode.json
 
 # Then run
 echo '{"message":"run batch","tools":[{"name":"batch","params":{"tool_calls":[{"tool":"bash","parameters":{"command":"echo hello"}},{"tool":"bash","parameters":{"command":"echo world"}}]}}]}' | opencode run --format json --model opencode/grok-code
