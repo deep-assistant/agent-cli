@@ -66,9 +66,10 @@ export namespace Config {
 
     const directories = [
       Global.Path.config,
+      // Support both new and old config directory names for backwards compatibility
       ...(await Array.fromAsync(
         Filesystem.up({
-          targets: ['.opencode'],
+          targets: ['.link-assistant-agent', '.opencode'],
           start: Instance.directory,
           stop: Instance.worktree,
         })
@@ -77,7 +78,7 @@ export namespace Config {
 
     if (Flag.OPENCODE_CONFIG_DIR) {
       directories.push(Flag.OPENCODE_CONFIG_DIR);
-      log.debug('loading config from OPENCODE_CONFIG_DIR', {
+      log.debug('loading config from LINK_ASSISTANT_AGENT_CONFIG_DIR', {
         path: Flag.OPENCODE_CONFIG_DIR,
       });
     }
@@ -86,7 +87,11 @@ export namespace Config {
     for (const dir of directories) {
       await assertValid(dir);
 
-      if (dir.endsWith('.opencode') || dir === Flag.OPENCODE_CONFIG_DIR) {
+      if (
+        dir.endsWith('.link-assistant-agent') ||
+        dir.endsWith('.opencode') ||
+        dir === Flag.OPENCODE_CONFIG_DIR
+      ) {
         for (const file of ['opencode.jsonc', 'opencode.json']) {
           log.debug(`loading config from ${path.join(dir, file)}`);
           result = mergeDeep(result, await loadFile(path.join(dir, file)));
@@ -162,7 +167,11 @@ export namespace Config {
       if (!md.data) continue;
 
       const name = (() => {
-        const patterns = ['/.opencode/command/', '/command/'];
+        const patterns = [
+          '/.link-assistant-agent/command/',
+          '/.opencode/command/',
+          '/command/',
+        ];
         const pattern = patterns.find((p) => item.includes(p));
 
         if (pattern) {
@@ -202,11 +211,13 @@ export namespace Config {
 
       // Extract relative path from agent folder for nested agents
       let agentName = path.basename(item, '.md');
-      const agentFolderPath = item.includes('/.opencode/agent/')
-        ? item.split('/.opencode/agent/')[1]
-        : item.includes('/agent/')
-          ? item.split('/agent/')[1]
-          : agentName + '.md';
+      const agentFolderPath = item.includes('/.link-assistant-agent/agent/')
+        ? item.split('/.link-assistant-agent/agent/')[1]
+        : item.includes('/.opencode/agent/')
+          ? item.split('/.opencode/agent/')[1]
+          : item.includes('/agent/')
+            ? item.split('/agent/')[1]
+            : agentName + '.md';
 
       // If agent is in a subfolder, include folder path in name
       if (agentFolderPath.includes('/')) {
