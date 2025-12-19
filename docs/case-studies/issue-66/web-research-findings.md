@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-
 # Web Research Findings: Google Gemini OAuth Authentication
 
 ## Overview
@@ -102,10 +100,6 @@ Research conducted on December 19, 2025, to gather additional facts and data abo
 - **Sources Reviewed**: 10 relevant results analyzed
 - **Key Documents**: Official Google docs, GitHub issues, community resources
 
-## Conclusion
-
-# The web research confirms that the implemented OAuth solution follows Google's official guidelines. However, the identified issues in the Gemini CLI suggest that there may be ongoing challenges with subscription-based authentication that should be monitored and addressed in future updates.
-
 ## Online Research Findings
 
 ### Official Google Documentation
@@ -191,6 +185,11 @@ Research conducted on December 19, 2025, to gather additional facts and data abo
 - **Compatibility**: Maintains API key fallback for non-subscription users
 - **Cost Zeroing**: Subscription users get free usage (cost = 0)
 - **Error Handling**: Addresses common OAuth failure modes from Gemini CLI issues
-- **Security**: Public OAuth credentials for installed applications (standard practice)</content>
-  <parameter name="filePath">docs/case-studies/issue-66/web-research-findings.md
-  > > > > > > > 9db761a45a9b8cccd582bc942251d5c344c2a868
+- **Security**: Public OAuth credentials for installed applications (standard practice)
+
+## Conclusion
+
+The web research confirms that the implemented OAuth solution follows Google's official guidelines. However, the identified issues in the Gemini CLI suggest that there may be ongoing challenges with subscription-based authentication that should be monitored and addressed in future updates.</content>
+<parameter name="filePath">docs/case-studies/issue-66/web-research-findings.md
+
+> > > > > > > 9db761a45a9b8cccd582bc942251d5c344c2a868

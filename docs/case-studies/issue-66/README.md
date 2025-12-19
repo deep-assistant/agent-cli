@@ -155,7 +155,6 @@ Recent online research revealed several OAuth implementation challenges and solu
 
 This comprehensive case study provides valuable insights for future OAuth implementations and troubleshooting.
 
-<<<<<<< HEAD
 **Key Technical Improvements**:
 
 - **OAuth Flow**: Local server redirect instead of deprecated out-of-band
@@ -222,11 +221,3 @@ Additional research was conducted to gather current information about Google Gem
 - **`./reference-gemini-cli`**: Official Gemini CLI uses public OAuth credentials for desktop apps
 - **`./original-opencode`**: OpenCode implementation lacks Google OAuth (uses Vertex AI instead)
 - **Solution Approach**: Adapted local server OAuth flow from Gemini CLI reference implementation
-
-## Conclusion
-
-# Issue #66 has been successfully resolved with full OAuth support for Google AI Pro/Ultra subscriptions. The implementation follows Google's official guidelines and provides a seamless authentication experience comparable to Claude Pro/Max support. All required data has been compiled, analyzed, and documented in this case study folder.
-
-The issue has been fully resolved with production-ready OAuth support for Google AI subscriptions.
-
-> > > > > > > 9db761a45a9b8cccd582bc942251d5c344c2a868
