@@ -38,7 +38,7 @@ Based on codebase analysis, Google OAuth support appears to be implemented:
 ### Key Components
 
 - **OAuth Client ID/Secret**: Same as Gemini CLI (public for installed apps)
-- **Scopes**: `https://www.googleapis.com/auth/cloud-platform`, `userinfo.email`, `userinfo.profile`, `generative-language.retriever`
+- **Scopes**: `https://www.googleapis.com/auth/cloud-platform`, `userinfo.email`, `userinfo.profile`
 - **Flow**: OAuth 2.0 with PKCE, local server callback
 - **Token Management**: Automatic refresh using refresh tokens
 - **Authentication**: Bearer token in Authorization header
@@ -107,7 +107,7 @@ Based on codebase analysis, Google OAuth support appears to be implemented:
 The implementation of Google OAuth support for Gemini subscriptions has been successfully completed. The solution includes:
 
 1. **Full OAuth Implementation**: Complete OAuth 2.0 flow with PKCE and local HTTP server
-2. **Proper Scopes**: All required scopes including `generative-language.retriever` for Gemini API access
+2. **Proper Scopes**: Standard OAuth scopes for Google API access
 3. **Token Management**: Automatic token refresh with secure storage
 4. **User Experience**: Seamless browser-based authentication
 5. **Comprehensive Documentation**: Case study with research, timeline, and analysis
@@ -123,7 +123,7 @@ The implementation of Google OAuth support for Gemini subscriptions has been suc
 
 - OAuth Plugin: `src/auth/plugins.ts` (GooglePlugin)
 - Provider Support: `src/provider/provider.ts` (google and google-oauth providers)
-- Required Scopes: cloud-platform, userinfo.email, userinfo.profile, generative-language.retriever
+- Required Scopes: cloud-platform, userinfo.email, userinfo.profile
 - Authentication Flow: Local HTTP server with automatic browser launch
 - Token Storage: Secure encrypted storage with automatic refresh
 
