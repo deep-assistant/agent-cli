@@ -314,7 +314,7 @@ agent mcp add playwright npx @playwright/mcp@latest
 agent mcp list
 ```
 
-This will create a configuration file at `~/.config/opencode/opencode.json` (or your system's config directory) with:
+This will create a configuration file at `~/.config/link-assistant-agent/opencode.json` (or your system's config directory) with:
 
 ```json
 {
@@ -477,7 +477,7 @@ The package publishes source files directly (no build step required). Bun handle
 
 ### No Configuration Required
 
-- **WebSearch/CodeSearch**: Work without `OPENCODE_EXPERIMENTAL_EXA` environment variable
+- **WebSearch/CodeSearch**: Work without `LINK_ASSISTANT_AGENT_EXPERIMENTAL_EXA` environment variable (legacy `OPENCODE_EXPERIMENTAL_EXA` still supported)
 - **Batch Tool**: Always enabled, no experimental flag needed
 - **All Tools**: No config files, API keys handled automatically
 

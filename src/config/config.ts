@@ -22,6 +22,103 @@ import { ConfigMarkdown } from './markdown';
 export namespace Config {
   const log = Log.create({ service: 'config' });
 
+  /**
+   * Automatically migrate .opencode directories to .link-assistant-agent
+   * This ensures a smooth transition for both file system configs and environment variables.
+   * Once .link-assistant-agent exists, we stop reading from .opencode.
+   */
+  async function migrateConfigDirectories() {
+    // Find all .opencode and .link-assistant-agent directories in the project hierarchy
+    const allDirs = await Array.fromAsync(
+      Filesystem.up({
+        targets: ['.link-assistant-agent', '.opencode'],
+        start: Instance.directory,
+        stop: Instance.worktree,
+      })
+    );
+
+    const newConfigDirs = allDirs.filter((d) =>
+      d.endsWith('.link-assistant-agent')
+    );
+    const oldConfigDirs = allDirs.filter((d) => d.endsWith('.opencode'));
+
+    // For each old config directory, check if there's a corresponding new one
+    for (const oldDir of oldConfigDirs) {
+      const parentDir = path.dirname(oldDir);
+      const newDir = path.join(parentDir, '.link-assistant-agent');
+
+      // Check if the new directory already exists at the same level
+      const newDirExists = newConfigDirs.includes(newDir);
+
+      if (!newDirExists) {
+        try {
+          // Perform migration by copying the entire directory
+          log.info(
+            `Migrating config from ${oldDir} to ${newDir} for smooth transition`
+          );
+
+          // Use fs-extra style recursive copy
+          await copyDirectory(oldDir, newDir);
+
+          log.info(`Successfully migrated config to ${newDir}`);
+        } catch (error) {
+          log.error(`Failed to migrate config from ${oldDir}:`, error);
+          // Don't throw - allow the app to continue with the old config
+        }
+      }
+    }
+
+    // Also migrate global config if needed
+    const oldGlobalPath = path.join(os.homedir(), '.config', 'opencode');
+    const newGlobalPath = Global.Path.config;
+
+    try {
+      const oldGlobalExists = await fs
+        .stat(oldGlobalPath)
+        .then(() => true)
+        .catch(() => false);
+      const newGlobalExists = await fs
+        .stat(newGlobalPath)
+        .then(() => true)
+        .catch(() => false);
+
+      if (oldGlobalExists && !newGlobalExists) {
+        log.info(
+          `Migrating global config from ${oldGlobalPath} to ${newGlobalPath}`
+        );
+        await copyDirectory(oldGlobalPath, newGlobalPath);
+        log.info(`Successfully migrated global config to ${newGlobalPath}`);
+      }
+    } catch (error) {
+      log.error('Failed to migrate global config:', error);
+      // Don't throw - allow the app to continue
+    }
+  }
+
+  /**
+   * Recursively copy a directory and all its contents
+   */
+  async function copyDirectory(src: string, dest: string) {
+    // Create destination directory
+    await fs.mkdir(dest, { recursive: true });
+
+    // Read all entries in source directory
+    const entries = await fs.readdir(src, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const srcPath = path.join(src, entry.name);
+      const destPath = path.join(dest, entry.name);
+
+      if (entry.isDirectory()) {
+        // Recursively copy subdirectories
+        await copyDirectory(srcPath, destPath);
+      } else if (entry.isFile() || entry.isSymbolicLink()) {
+        // Copy files
+        await fs.copyFile(srcPath, destPath);
+      }
+    }
+  }
+
   export const state = Instance.state(async () => {
     const auth = await Auth.all();
     let result = await global();
@@ -64,20 +161,43 @@ export namespace Config {
     result.agent = result.agent || {};
     result.mode = result.mode || {};
 
-    const directories = [
-      Global.Path.config,
-      ...(await Array.fromAsync(
-        Filesystem.up({
-          targets: ['.opencode'],
-          start: Instance.directory,
-          stop: Instance.worktree,
-        })
-      )),
-    ];
+    // Perform automatic migration from .opencode to .link-assistant-agent if needed
+    await migrateConfigDirectories();
+
+    // Find all config directories
+    const foundDirs = await Array.fromAsync(
+      Filesystem.up({
+        targets: ['.link-assistant-agent', '.opencode'],
+        start: Instance.directory,
+        stop: Instance.worktree,
+      })
+    );
+
+    // Check if any .link-assistant-agent directory exists
+    const hasNewConfig = foundDirs.some((d) =>
+      d.endsWith('.link-assistant-agent')
+    );
+
+    // Filter out .opencode directories if .link-assistant-agent exists
+    const filteredDirs = foundDirs.filter((dir) => {
+      // If .link-assistant-agent exists, exclude .opencode directories
+      if (hasNewConfig && dir.endsWith('.opencode')) {
+        log.debug(
+          'Skipping .opencode directory (using .link-assistant-agent):',
+          {
+            path: dir,
+          }
+        );
+        return false;
+      }
+      return true;
+    });
+
+    const directories = [Global.Path.config, ...filteredDirs];
 
     if (Flag.OPENCODE_CONFIG_DIR) {
       directories.push(Flag.OPENCODE_CONFIG_DIR);
-      log.debug('loading config from OPENCODE_CONFIG_DIR', {
+      log.debug('loading config from LINK_ASSISTANT_AGENT_CONFIG_DIR', {
         path: Flag.OPENCODE_CONFIG_DIR,
       });
     }
@@ -86,7 +206,11 @@ export namespace Config {
     for (const dir of directories) {
       await assertValid(dir);
 
-      if (dir.endsWith('.opencode') || dir === Flag.OPENCODE_CONFIG_DIR) {
+      if (
+        dir.endsWith('.link-assistant-agent') ||
+        dir.endsWith('.opencode') ||
+        dir === Flag.OPENCODE_CONFIG_DIR
+      ) {
         for (const file of ['opencode.jsonc', 'opencode.json']) {
           log.debug(`loading config from ${path.join(dir, file)}`);
           result = mergeDeep(result, await loadFile(path.join(dir, file)));
@@ -162,7 +286,11 @@ export namespace Config {
       if (!md.data) continue;
 
       const name = (() => {
-        const patterns = ['/.opencode/command/', '/command/'];
+        const patterns = [
+          '/.link-assistant-agent/command/',
+          '/.opencode/command/',
+          '/command/',
+        ];
         const pattern = patterns.find((p) => item.includes(p));
 
         if (pattern) {
@@ -202,11 +330,13 @@ export namespace Config {
 
       // Extract relative path from agent folder for nested agents
       let agentName = path.basename(item, '.md');
-      const agentFolderPath = item.includes('/.opencode/agent/')
-        ? item.split('/.opencode/agent/')[1]
-        : item.includes('/agent/')
-          ? item.split('/agent/')[1]
-          : agentName + '.md';
+      const agentFolderPath = item.includes('/.link-assistant-agent/agent/')
+        ? item.split('/.link-assistant-agent/agent/')[1]
+        : item.includes('/.opencode/agent/')
+          ? item.split('/.opencode/agent/')[1]
+          : item.includes('/agent/')
+            ? item.split('/agent/')[1]
+            : agentName + '.md';
 
       // If agent is in a subfolder, include folder path in name
       if (agentFolderPath.includes('/')) {
