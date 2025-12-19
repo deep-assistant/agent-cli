@@ -127,4 +127,30 @@ The implementation of Google OAuth support for Gemini subscriptions has been suc
 - Authentication Flow: Local HTTP server with automatic browser launch
 - Token Storage: Secure encrypted storage with automatic refresh
 
+## Additional Research Insights
+
+Recent online research revealed several OAuth implementation challenges and solutions:
+
+### Gemini CLI OAuth Issues Identified
+
+- **Headless Environment Failures**: OAuth requires browser interaction, problematic for servers/Docker
+- **Scope Validation Errors**: Invalid scope combinations cause authentication failures
+- **Token Loading Issues**: Path dependencies in credential storage
+- **Header Requirements**: Missing Accept headers in token requests
+
+### Scope Management Best Practices
+
+- **generative-language.retriever**: Essential for subscription benefits and premium model access
+- **Minimal Scope Principle**: Use only required scopes to minimize security surface
+- **Dynamic Scope Handling**: Adapt scopes based on user subscription tier
+
+### Implementation Recommendations
+
+- **Fallback Mechanisms**: Support both OAuth and API key authentication
+- **Error Recovery**: Robust handling of OAuth failures with clear user guidance
+- **Docker Compatibility**: Special OAuth callback configuration for containerized environments
+- **Security Monitoring**: Track OAuth token usage and refresh patterns
+
+This comprehensive case study provides valuable insights for future OAuth implementations and troubleshooting.
+
 The issue has been fully resolved with production-ready OAuth support for Google AI subscriptions.
