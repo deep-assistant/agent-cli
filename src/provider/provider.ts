@@ -927,9 +927,9 @@ export namespace Provider {
       }
     }
 
-    // Fall back to any available provider
+    // Fall back to any available provider (skip opencode since it failed)
     const provider = providers.find(
-      (p) => !cfg.provider || Object.keys(cfg.provider).includes(p.info.id)
+      (p) => p.info.id !== 'opencode' && (!cfg.provider || Object.keys(cfg.provider).includes(p.info.id))
     );
     if (!provider) throw new Error('no providers found');
     const [model] = sort(Object.values(provider.info.models));
