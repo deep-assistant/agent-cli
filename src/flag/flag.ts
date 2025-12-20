@@ -27,6 +27,14 @@ export namespace Flag {
     OPENCODE_VERBOSE = value;
   }
 
+  // Dry-run mode - simulates operations without making actual API calls
+  export let OPENCODE_DRY_RUN = truthy('OPENCODE_DRY_RUN');
+
+  // Allow setting dry-run mode programmatically (e.g., from CLI --dry-run flag)
+  export function setDryRun(value: boolean) {
+    OPENCODE_DRY_RUN = value;
+  }
+
   function truthy(key: string) {
     const value = process.env[key]?.toLowerCase();
     return value === 'true' || value === '1';
