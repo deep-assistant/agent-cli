@@ -73,32 +73,71 @@ process.on('unhandledRejection', (reason, _promise) => {
   process.exit(1);
 });
 
-function readStdin() {
-  return new Promise((resolve, reject) => {
+/**
+ * Read stdin with optional timeout.
+ * @param {number|null} timeout - Timeout in milliseconds. If null, wait indefinitely until EOF.
+ * @returns {Promise<string>} - The stdin content
+ */
+function readStdinWithTimeout(timeout = null) {
+  return new Promise((resolve) => {
     let data = '';
-    const onData = (chunk) => {
-      data += chunk;
-    };
-    const onEnd = () => {
-      cleanup();
-      resolve(data);
-    };
-    const onError = (err) => {
-      cleanup();
-      reject(err);
-    };
+    let hasData = false;
+    let timer = null;
+
     const cleanup = () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
       process.stdin.removeListener('data', onData);
       process.stdin.removeListener('end', onEnd);
       process.stdin.removeListener('error', onError);
     };
+
+    const onData = (chunk) => {
+      hasData = true;
+      if (timer) {
+        clearTimeout(timer);
+      }
+      data += chunk;
+    };
+
+    const onEnd = () => {
+      cleanup();
+      resolve(data);
+    };
+
+    const onError = () => {
+      cleanup();
+      resolve('');
+    };
+
+    // Only set timeout if specified (not null)
+    if (timeout !== null) {
+      timer = setTimeout(() => {
+        if (!hasData) {
+          process.stdin.pause();
+          cleanup();
+          resolve('');
+        }
+      }, timeout);
+    }
+
     process.stdin.on('data', onData);
     process.stdin.on('end', onEnd);
     process.stdin.on('error', onError);
   });
 }
 
-async function runAgentMode(argv) {
+/**
+ * Output JSON status message to stderr
+ * This prevents the status message from interfering with JSON output parsing
+ * @param {object} status - Status object to output
+ */
+function outputStatus(status) {
+  console.error(JSON.stringify(status));
+}
+
+async function runAgentMode(argv, request) {
   // Note: verbose flag and logging are now initialized in middleware
   // See main() function for the middleware that sets up Flag and Log.init()
 
@@ -206,21 +245,6 @@ async function runAgentMode(argv) {
   }
 
   // Logging is already initialized in middleware, no need to call Log.init() again
-
-  // Read input from stdin
-  const input = await readStdin();
-  const trimmedInput = input.trim();
-
-  // Try to parse as JSON, if it fails treat it as plain text message
-  let request;
-  try {
-    request = JSON.parse(trimmedInput);
-  } catch (_e) {
-    // Not JSON, treat as plain text message
-    request = {
-      message: trimmedInput,
-    };
-  }
 
   // Wrap in Instance.provide for OpenCode infrastructure
   await Instance.provide({
@@ -533,7 +557,7 @@ async function runDirectMode(
 async function main() {
   try {
     // Parse command line arguments with subcommands
-    const argv = await yargs(hideBin(process.argv))
+    const yargsInstance = yargs(hideBin(process.argv))
       .scriptName('agent')
       .usage('$0 [command] [options]')
       .version(pkg.version)
@@ -593,6 +617,34 @@ async function main() {
           'Use existing Claude OAuth credentials from ~/.claude/.credentials.json (from Claude Code CLI)',
         default: false,
       })
+      .option('prompt', {
+        alias: 'p',
+        type: 'string',
+        description: 'Prompt message to send directly (bypasses stdin reading)',
+      })
+      .option('disable-stdin', {
+        type: 'boolean',
+        description:
+          'Disable stdin streaming mode (requires --prompt or shows help)',
+        default: false,
+      })
+      .option('stdin-stream-timeout', {
+        type: 'number',
+        description:
+          'Optional timeout in milliseconds for stdin reading (default: no timeout)',
+      })
+      .option('auto-merge-queued-messages', {
+        type: 'boolean',
+        description:
+          'Enable auto-merging of rapidly arriving input lines into single messages (default: true)',
+        default: true,
+      })
+      .option('interactive', {
+        type: 'boolean',
+        description:
+          'Enable interactive mode to accept manual input as plain text strings (default: true). Use --no-interactive to only accept JSON input.',
+        default: true,
+      })
       // Initialize logging early for all CLI commands
       // This prevents debug output from appearing in CLI unless --verbose is used
       .middleware(async (argv) => {
@@ -641,15 +693,100 @@ async function main() {
           process.exit(1);
         }
       })
-      .help().argv;
+      .help();
+
+    const argv = await yargsInstance.argv;
 
     // If a command was executed (like mcp), yargs handles it
     // Otherwise, check if we should run in agent mode (stdin piped)
     const commandExecuted = argv._ && argv._.length > 0;
 
     if (!commandExecuted) {
-      // No command specified, run in default agent mode (stdin processing)
-      await runAgentMode(argv);
+      // Check if --prompt flag was provided
+      if (argv.prompt) {
+        // Direct prompt mode - bypass stdin entirely
+        const request = { message: argv.prompt };
+        await runAgentMode(argv, request);
+        return;
+      }
+
+      // Check if --disable-stdin was set without --prompt
+      if (argv['disable-stdin']) {
+        // Output a helpful message suggesting to use --prompt
+        outputStatus({
+          type: 'error',
+          message:
+            'No prompt provided. Use -p/--prompt to specify a message, or remove --disable-stdin to read from stdin.',
+          hint: 'Example: agent -p "Hello, how are you?"',
+        });
+        process.exit(1);
+      }
+
+      // Check if stdin is a TTY (interactive terminal)
+      // If it is, show help instead of waiting for input
+      if (process.stdin.isTTY) {
+        yargsInstance.showHelp();
+        process.exit(0);
+      }
+
+      // stdin is piped - enter stdin listening mode
+      // Output status message to inform user what's happening
+      const isInteractive = argv.interactive !== false;
+      const autoMerge = argv['auto-merge-queued-messages'] !== false;
+
+      outputStatus({
+        type: 'status',
+        mode: 'stdin-stream',
+        message:
+          'Agent CLI in stdin listening mode. Accepts JSON and plain text input.',
+        hint: 'Press CTRL+C to exit. Use --help for options.',
+        acceptedFormats: isInteractive
+          ? ['JSON object with "message" field', 'Plain text']
+          : ['JSON object with "message" field'],
+        options: {
+          interactive: isInteractive,
+          autoMergeQueuedMessages: autoMerge,
+        },
+      });
+
+      // Read stdin with optional timeout
+      const timeout = argv['stdin-stream-timeout'] ?? null;
+      const input = await readStdinWithTimeout(timeout);
+      const trimmedInput = input.trim();
+
+      if (trimmedInput === '') {
+        outputStatus({
+          type: 'status',
+          message: 'No input received. Exiting.',
+        });
+        yargsInstance.showHelp();
+        process.exit(0);
+      }
+
+      // Try to parse as JSON, if it fails treat it as plain text message
+      let request;
+      try {
+        request = JSON.parse(trimmedInput);
+      } catch (_e) {
+        // Not JSON
+        if (!isInteractive) {
+          // In non-interactive mode, only accept JSON
+          outputStatus({
+            type: 'error',
+            message:
+              'Invalid JSON input. In non-interactive mode (--no-interactive), only JSON input is accepted.',
+            hint: 'Use --interactive to accept plain text, or provide valid JSON: {"message": "your text"}',
+          });
+          process.exit(1);
+        }
+        // In interactive mode, treat as plain text message
+        request = {
+          message: trimmedInput,
+        };
+      }
+
+      // Run agent mode
+      await runAgentMode(argv, request);
     }
   } catch (error) {
     hasError = true;
