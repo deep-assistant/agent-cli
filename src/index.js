@@ -129,11 +129,12 @@ function readStdinWithTimeout(timeout = null) {
 }
 
 /**
- * Output JSON status message to stdout
+ * Output JSON status message to stderr
+ * This prevents the status message from interfering with JSON output parsing
  * @param {object} status - Status object to output
  */
 function outputStatus(status) {
-  console.log(JSON.stringify(status));
+  console.error(JSON.stringify(status));
 }
 
 async function runAgentMode(argv, request) {
