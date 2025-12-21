@@ -39,7 +39,7 @@ export namespace SessionProcessor {
         return toolcalls[toolCallID];
       },
       async process(fn: () => StreamTextResult<Record<string, AITool>, never>) {
-        log.lazy.info(() => ({ message: 'process' }));
+        log.info(() => ({ message: 'process' }));
         while (true) {
           try {
             let currentText: MessageV2.TextPart | undefined;
@@ -305,12 +305,12 @@ export namespace SessionProcessor {
                   break;
 
                 default:
-                  log.lazy.info(() => ({ message: 'unhandled', ...value }));
+                  log.info(() => ({ message: 'unhandled', ...value }));
                   continue;
               }
             }
           } catch (e) {
-            log.lazy.error(() => ({ message: 'process', error: e }));
+            log.error(() => ({ message: 'process', error: e }));
             const error = MessageV2.fromError(e, {
               providerID: input.providerID,
             });

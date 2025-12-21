@@ -28,7 +28,7 @@ export namespace Storage {
         cwd: project,
         onlyFiles: false,
       })) {
-        log.lazy.info(() => ({ message: 'migrating project', projectDir }));
+        log.info(() => ({ message: 'migrating project', projectDir }));
         let projectID = projectDir;
         const fullProjectDir = path.join(project, projectDir);
         let worktree = '/';
@@ -74,7 +74,7 @@ export namespace Storage {
             })
           );
 
-          log.lazy.info(() => ({
+          log.info(() => ({
             message: 'migrating sessions for project',
             projectID,
           }));
@@ -90,10 +90,10 @@ export namespace Storage {
               projectID,
               path.basename(sessionFile)
             );
-            log.lazy.info(() => ({ message: 'copying', sessionFile, dest }));
+            log.info(() => ({ message: 'copying', sessionFile, dest }));
             const session = await Bun.file(sessionFile).json();
             await Bun.write(dest, JSON.stringify(session));
-            log.lazy.info(() => ({
+            log.info(() => ({
               message: 'migrating messages for session',
               sessionID: session.id,
             }));
@@ -109,11 +109,11 @@ export namespace Storage {
                 session.id,
                 path.basename(msgFile)
               );
-              log.lazy.info(() => ({ message: 'copying', msgFile, dest }));
+              log.info(() => ({ message: 'copying', msgFile, dest }));
               const message = await Bun.file(msgFile).json();
               await Bun.write(dest, JSON.stringify(message));
 
-              log.lazy.info(() => ({
+              log.info(() => ({
                 message: 'migrating parts for message',
                 messageID: message.id,
               }));
@@ -130,7 +130,7 @@ export namespace Storage {
                   path.basename(partFile)
                 );
                 const part = await Bun.file(partFile).json();
-                log.lazy.info(() => ({ message: 'copying', partFile, dest }));
+                log.info(() => ({ message: 'copying', partFile, dest }));
                 await Bun.write(dest, JSON.stringify(part));
               }
             }
@@ -178,10 +178,10 @@ export namespace Storage {
       .then((x) => parseInt(x))
       .catch(() => 0);
     for (let index = migration; index < MIGRATIONS.length; index++) {
-      log.lazy.info(() => ({ message: 'running migration', index }));
+      log.info(() => ({ message: 'running migration', index }));
       const migration = MIGRATIONS[index];
       await migration(dir).catch(() =>
-        log.lazy.error(() => ({ message: 'failed to run migration', index }))
+        log.error(() => ({ message: 'failed to run migration', index }))
       );
       await Bun.write(path.join(dir, 'migration'), (index + 1).toString());
     }

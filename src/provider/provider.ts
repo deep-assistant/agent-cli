@@ -37,7 +37,7 @@ export namespace Provider {
       // Check if OAuth credentials are available via the auth plugin
       const auth = await Auth.get('anthropic');
       if (auth?.type === 'oauth') {
-        log.lazy.info(() => ({ message: 'using anthropic oauth credentials' }));
+        log.info(() => ({ message: 'using anthropic oauth credentials' }));
         const loaderFn = await AuthPlugins.getLoader('anthropic');
         if (loaderFn) {
           const result = await loaderFn(() => Auth.get('anthropic'), input);
@@ -330,7 +330,7 @@ export namespace Provider {
     google: async (input) => {
       const auth = await Auth.get('google');
       if (auth?.type === 'oauth') {
-        log.lazy.info(() => ({ message: 'using google oauth credentials' }));
+        log.info(() => ({ message: 'using google oauth credentials' }));
         const loaderFn = await AuthPlugins.getLoader('google');
         if (loaderFn) {
           const result = await loaderFn(() => Auth.get('google'), input);
@@ -355,7 +355,7 @@ export namespace Provider {
     'github-copilot': async (input) => {
       const auth = await Auth.get('github-copilot');
       if (auth?.type === 'oauth') {
-        log.lazy.info(() => ({
+        log.info(() => ({
           message: 'using github copilot oauth credentials',
         }));
         const loaderFn = await AuthPlugins.getLoader('github-copilot');
@@ -385,7 +385,7 @@ export namespace Provider {
     'github-copilot-enterprise': async (input) => {
       const auth = await Auth.get('github-copilot-enterprise');
       if (auth?.type === 'oauth') {
-        log.lazy.info(() => ({
+        log.info(() => ({
           message: 'using github copilot enterprise oauth credentials',
         }));
         const loaderFn = await AuthPlugins.getLoader('github-copilot');
@@ -439,7 +439,7 @@ export namespace Provider {
         return { autoload: false };
       }
 
-      log.lazy.info(() => ({
+      log.info(() => ({
         message: 'using claude oauth credentials',
         source: tokenSource,
       }));
@@ -544,7 +544,7 @@ export namespace Provider {
     // Maps `${provider}/${key}` to the provider’s actual model ID for custom aliases.
     const realIdByKey = new Map<string, string>();
 
-    log.lazy.info(() => ({ message: 'init' }));
+    log.info(() => ({ message: 'init' }));
 
     function mergeProvider(
       id: string,
@@ -790,7 +790,7 @@ export namespace Provider {
         delete providers[providerID];
         continue;
       }
-      log.lazy.info(() => ({ message: 'found', providerID }));
+      log.info(() => ({ message: 'found', providerID }));
     }
 
     return {
@@ -825,21 +825,21 @@ export namespace Provider {
 
       let installedPath: string;
       if (!pkg.startsWith('file://')) {
-        log.lazy.info(() => ({
+        log.info(() => ({
           message: 'installing provider package',
           providerID: provider.id,
           pkg,
           version: 'latest',
         }));
         installedPath = await BunProc.install(pkg, 'latest');
-        log.lazy.info(() => ({
+        log.info(() => ({
           message: 'provider package installed successfully',
           providerID: provider.id,
           pkg,
           installedPath,
         }));
       } else {
-        log.lazy.info(() => ({ message: 'loading local provider', pkg }));
+        log.info(() => ({ message: 'loading local provider', pkg }));
         installedPath = pkg;
       }
 
@@ -885,7 +885,7 @@ export namespace Provider {
       s.sdk.set(key, loaded);
       return loaded as SDK;
     })().catch((e) => {
-      log.lazy.error(() => ({
+      log.error(() => ({
         message: 'provider initialization failed',
         providerID: provider.id,
         pkg: model.provider?.npm ?? provider.npm ?? provider.id,
@@ -1039,7 +1039,7 @@ export namespace Provider {
     if (opencodeProvider) {
       const [model] = sort(Object.values(opencodeProvider.info.models));
       if (model) {
-        log.lazy.info(() => ({
+        log.info(() => ({
           message: 'using opencode provider as default',
           provider: opencodeProvider.info.id,
           model: model.id,

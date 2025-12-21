@@ -63,7 +63,7 @@ export namespace Bus {
       type: def.type,
       properties,
     };
-    log.lazy.info(() => ({ message: 'publishing', type: def.type }));
+    log.info(() => ({ message: 'publishing', type: def.type }));
     const pending = [];
     for (const key of [def.type, '*']) {
       const match = state().subscriptions.get(key);
@@ -105,14 +105,14 @@ export namespace Bus {
   }
 
   function raw(type: string, callback: (event: any) => void) {
-    log.lazy.info(() => ({ message: 'subscribing', type }));
+    log.info(() => ({ message: 'subscribing', type }));
     const subscriptions = state().subscriptions;
     let match = subscriptions.get(type) ?? [];
     match.push(callback);
     subscriptions.set(type, match);
 
     return () => {
-      log.lazy.info(() => ({ message: 'unsubscribing', type }));
+      log.info(() => ({ message: 'unsubscribing', type }));
       const match = subscriptions.get(type);
       if (!match) return;
       const index = match.indexOf(callback);

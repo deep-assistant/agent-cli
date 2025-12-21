@@ -28,7 +28,7 @@ export namespace Snapshot {
       await $`git --git-dir ${git} config core.autocrlf false`
         .quiet()
         .nothrow();
-      log.lazy.info(() => ({ message: 'initialized' }));
+      log.info(() => ({ message: 'initialized' }));
     }
     await $`git --git-dir ${git} --work-tree ${Instance.worktree} add .`
       .quiet()
@@ -40,7 +40,7 @@ export namespace Snapshot {
         .cwd(Instance.directory)
         .nothrow()
         .text();
-    log.lazy.info(() => ({
+    log.info(() => ({
       message: 'tracking',
       hash,
       cwd: Instance.directory,
@@ -69,7 +69,7 @@ export namespace Snapshot {
 
     // If git diff fails, return empty patch
     if (result.exitCode !== 0) {
-      log.lazy.warn(() => ({
+      log.warn(() => ({
         message: 'failed to get diff',
         hash,
         exitCode: result.exitCode,
@@ -90,7 +90,7 @@ export namespace Snapshot {
   }
 
   export async function restore(snapshot: string) {
-    log.lazy.info(() => ({ message: 'restore', commit: snapshot }));
+    log.info(() => ({ message: 'restore', commit: snapshot }));
     const git = gitdir();
     const result =
       await $`git --git-dir ${git} --work-tree ${Instance.worktree} read-tree ${snapshot} && git --git-dir ${git} --work-tree ${Instance.worktree} checkout-index -a -f`
@@ -99,7 +99,7 @@ export namespace Snapshot {
         .nothrow();
 
     if (result.exitCode !== 0) {
-      log.lazy.error(() => ({
+      log.error(() => ({
         message: 'failed to restore snapshot',
         snapshot,
         exitCode: result.exitCode,
@@ -115,7 +115,7 @@ export namespace Snapshot {
     for (const item of patches) {
       for (const file of item.files) {
         if (files.has(file)) continue;
-        log.lazy.info(() => ({ message: 'reverting', file, hash: item.hash }));
+        log.info(() => ({ message: 'reverting', file, hash: item.hash }));
         const result =
           await $`git --git-dir ${git} --work-tree ${Instance.worktree} checkout ${item.hash} -- ${file}`
             .quiet()
@@ -129,12 +129,12 @@ export namespace Snapshot {
               .cwd(Instance.worktree)
               .nothrow();
           if (checkTree.exitCode === 0 && checkTree.text().trim()) {
-            log.lazy.info(() => ({
+            log.info(() => ({
               message: 'file existed in snapshot but checkout failed, keeping',
               file,
             }));
           } else {
-            log.lazy.info(() => ({
+            log.info(() => ({
               message: 'file did not exist in snapshot, deleting',
               file,
             }));
@@ -159,7 +159,7 @@ export namespace Snapshot {
         .nothrow();
 
     if (result.exitCode !== 0) {
-      log.lazy.warn(() => ({
+      log.warn(() => ({
         message: 'failed to get diff',
         hash,
         exitCode: result.exitCode,

@@ -17,7 +17,7 @@ export namespace BunProc {
     cmd: string[],
     options?: Bun.SpawnOptions.OptionsObject<any, any, any>
   ) {
-    log.lazy.info(() => ({
+    log.info(() => ({
       message: 'running',
       cmd: [which(), ...cmd],
       ...options,
@@ -43,7 +43,7 @@ export namespace BunProc {
         ? result.stderr
         : await readableStreamToText(result.stderr)
       : undefined;
-    log.lazy.info(() => ({ message: 'done', code, stdout, stderr }));
+    log.info(() => ({ message: 'done', code, stdout, stderr }));
     if (code !== 0) {
       const parts = [`Command failed with exit code ${result.exitCode}`];
       if (stderr) parts.push(`stderr: ${stderr}`);
@@ -108,7 +108,7 @@ export namespace BunProc {
 
     // Check for dry-run mode
     if (Flag.OPENCODE_DRY_RUN) {
-      log.lazy.info(() => ({
+      log.info(() => ({
         message:
           '[DRY RUN] Would install package (skipping actual installation)',
         pkg,
@@ -133,7 +133,7 @@ export namespace BunProc {
     // - If .npmrc files exist, Bun will use them automatically
     // - If no .npmrc files exist, Bun will default to https://registry.npmjs.org
     // - No need to pass --registry flag
-    log.lazy.info(() => ({
+    log.info(() => ({
       message: "installing package using Bun's default registry resolution",
       pkg,
       version,
@@ -147,7 +147,7 @@ export namespace BunProc {
           cwd: Global.Path.cache,
         });
 
-        log.lazy.info(() => ({
+        log.info(() => ({
           message: 'package installed successfully',
           pkg,
           version,
@@ -160,7 +160,7 @@ export namespace BunProc {
         const errorMsg = e instanceof Error ? e.message : String(e);
         const isCacheError = isCacheRelatedError(errorMsg);
 
-        log.lazy.warn(() => ({
+        log.warn(() => ({
           message: 'package installation attempt failed',
           pkg,
           version,
@@ -171,7 +171,7 @@ export namespace BunProc {
         }));
 
         if (isCacheError && attempt < MAX_RETRIES) {
-          log.lazy.info(() => ({
+          log.info(() => ({
             message: 'retrying installation after cache-related error',
             pkg,
             version,
@@ -185,7 +185,7 @@ export namespace BunProc {
         }
 
         // Non-cache error or final attempt - log and throw
-        log.lazy.error(() => ({
+        log.error(() => ({
           message: 'package installation failed',
           pkg,
           version,
@@ -197,7 +197,7 @@ export namespace BunProc {
 
         // Provide helpful recovery instructions for cache-related errors
         if (isCacheError) {
-          log.lazy.error(() => ({
+          log.error(() => ({
             message:
               'Bun package cache may be corrupted. Try clearing the cache with: bun pm cache rm',
           }));

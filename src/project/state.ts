@@ -36,7 +36,7 @@ export namespace State {
     const entries = recordsByKey.get(key);
     if (!entries) return;
 
-    log.lazy.info(() => ({
+    log.info(() => ({
       message: 'waiting for state disposal to complete',
       key,
     }));
@@ -45,7 +45,7 @@ export namespace State {
 
     setTimeout(() => {
       if (!disposalFinished) {
-        log.lazy.warn(() => ({
+        log.warn(() => ({
           message:
             'state disposal is taking an unusually long time - if it does not complete in a reasonable time, please report this as a bug',
           key,
@@ -60,7 +60,7 @@ export namespace State {
       const task = Promise.resolve(entry.state)
         .then((state) => entry.dispose!(state))
         .catch((error) => {
-          log.lazy.error(() => ({
+          log.error(() => ({
             message: 'Error while disposing state',
             error,
             key,
@@ -72,6 +72,6 @@ export namespace State {
     await Promise.all(tasks);
     recordsByKey.delete(key);
     disposalFinished = true;
-    log.lazy.info(() => ({ message: 'state disposal completed', key }));
+    log.info(() => ({ message: 'state disposal completed', key }));
   }
 }

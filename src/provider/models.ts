@@ -78,14 +78,14 @@ export namespace ModelsDev {
 
   export async function refresh() {
     const file = Bun.file(filepath);
-    log.lazy.info(() => ({ message: 'refreshing', file }));
+    log.info(() => ({ message: 'refreshing', file }));
     const result = await fetch('https://models.dev/api.json', {
       headers: {
         'User-Agent': 'agent-cli/1.0.0',
       },
       signal: AbortSignal.timeout(10 * 1000),
     }).catch((e) => {
-      log.lazy.error(() => ({
+      log.error(() => ({
         message: 'Failed to fetch models.dev',
         error: e,
       }));

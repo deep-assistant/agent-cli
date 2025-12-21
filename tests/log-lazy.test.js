@@ -11,16 +11,16 @@ import { describe, it, expect } from 'bun:test';
 
 describe('Log Lazy JSON Output', () => {
   describe('Log module lazy support', () => {
-    it('should have lazy logging methods on logger', async () => {
+    it('should have logging methods that support both immediate and lazy styles', async () => {
       const { Log } = await import('../src/util/log.ts');
 
       const logger = Log.create({ service: 'test' });
 
-      expect(logger.lazy).toBeDefined();
-      expect(typeof logger.lazy.debug).toBe('function');
-      expect(typeof logger.lazy.info).toBe('function');
-      expect(typeof logger.lazy.warn).toBe('function');
-      expect(typeof logger.lazy.error).toBe('function');
+      // All log methods should support both immediate and lazy (callback) styles
+      expect(typeof logger.debug).toBe('function');
+      expect(typeof logger.info).toBe('function');
+      expect(typeof logger.warn).toBe('function');
+      expect(typeof logger.error).toBe('function');
     });
 
     it('should have isJsonOutput function', async () => {

@@ -53,18 +53,18 @@ export namespace Config {
       if (!newDirExists) {
         try {
           // Perform migration by copying the entire directory
-          log.lazy.info(() => ({
+          log.info(() => ({
             message: `Migrating config from ${oldDir} to ${newDir} for smooth transition`,
           }));
 
           // Use fs-extra style recursive copy
           await copyDirectory(oldDir, newDir);
 
-          log.lazy.info(() => ({
+          log.info(() => ({
             message: `Successfully migrated config to ${newDir}`,
           }));
         } catch (error) {
-          log.lazy.error(() => ({
+          log.error(() => ({
             message: `Failed to migrate config from ${oldDir}:`,
             error,
           }));
@@ -88,16 +88,16 @@ export namespace Config {
         .catch(() => false);
 
       if (oldGlobalExists && !newGlobalExists) {
-        log.lazy.info(() => ({
+        log.info(() => ({
           message: `Migrating global config from ${oldGlobalPath} to ${newGlobalPath}`,
         }));
         await copyDirectory(oldGlobalPath, newGlobalPath);
-        log.lazy.info(() => ({
+        log.info(() => ({
           message: `Successfully migrated global config to ${newGlobalPath}`,
         }));
       }
     } catch (error) {
-      log.lazy.error(() => ({
+      log.error(() => ({
         message: 'Failed to migrate global config:',
         error,
       }));
@@ -136,7 +136,7 @@ export namespace Config {
     // Override with custom config if provided
     if (Flag.OPENCODE_CONFIG) {
       result = mergeDeep(result, await loadFile(Flag.OPENCODE_CONFIG));
-      log.lazy.debug(() => ({
+      log.debug(() => ({
         message: 'loaded custom config',
         path: Flag.OPENCODE_CONFIG,
       }));
@@ -155,7 +155,7 @@ export namespace Config {
 
     if (Flag.OPENCODE_CONFIG_CONTENT) {
       result = mergeDeep(result, JSON.parse(Flag.OPENCODE_CONFIG_CONTENT));
-      log.lazy.debug(() => ({
+      log.debug(() => ({
         message: 'loaded custom config from OPENCODE_CONFIG_CONTENT',
       }));
     }
@@ -197,7 +197,7 @@ export namespace Config {
     const filteredDirs = foundDirs.filter((dir) => {
       // If .link-assistant-agent exists, exclude .opencode directories
       if (hasNewConfig && dir.endsWith('.opencode')) {
-        log.lazy.debug(() => ({
+        log.debug(() => ({
           message:
             'Skipping .opencode directory (using .link-assistant-agent):',
           path: dir,
@@ -211,7 +211,7 @@ export namespace Config {
 
     if (Flag.OPENCODE_CONFIG_DIR) {
       directories.push(Flag.OPENCODE_CONFIG_DIR);
-      log.lazy.debug(() => ({
+      log.debug(() => ({
         message: 'loading config from LINK_ASSISTANT_AGENT_CONFIG_DIR',
         path: Flag.OPENCODE_CONFIG_DIR,
       }));
@@ -227,7 +227,7 @@ export namespace Config {
         dir === Flag.OPENCODE_CONFIG_DIR
       ) {
         for (const file of ['opencode.jsonc', 'opencode.json']) {
-          log.lazy.debug(() => ({
+          log.debug(() => ({
             message: `loading config from ${path.join(dir, file)}`,
           }));
           result = mergeDeep(result, await loadFile(path.join(dir, file)));
@@ -949,7 +949,7 @@ export namespace Config {
   });
 
   async function loadFile(filepath: string): Promise<Info> {
-    log.lazy.info(() => ({ message: 'loading', path: filepath }));
+    log.info(() => ({ message: 'loading', path: filepath }));
     let text = await Bun.file(filepath)
       .text()
       .catch((err) => {

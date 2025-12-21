@@ -39,24 +39,31 @@ export namespace Log {
   /**
    * Logger interface with support for both immediate and lazy logging.
    *
-   * Lazy logging methods accept a function that returns the data to log.
-   * The function is only called if logging is enabled for that level,
+   * All logging methods accept either:
+   * - A message string/object/Error with optional extra data
+   * - A function that returns the data to log (lazy evaluation)
+   *
+   * Lazy logging: The function is only called if logging is enabled for that level,
    * avoiding expensive computations when logs are disabled.
    */
   export type Logger = {
-    // Immediate logging (existing API for backward compatibility)
-    debug(message?: any, extra?: Record<string, any>): void;
-    info(message?: any, extra?: Record<string, any>): void;
-    error(message?: any, extra?: Record<string, any>): void;
-    warn(message?: any, extra?: Record<string, any>): void;
-
-    // Lazy logging - functions are only executed if level is enabled
-    lazy: {
-      debug(fn: () => { message?: string; [key: string]: any }): void;
-      info(fn: () => { message?: string; [key: string]: any }): void;
-      error(fn: () => { message?: string; [key: string]: any }): void;
-      warn(fn: () => { message?: string; [key: string]: any }): void;
-    };
+    // Unified logging - supports both immediate and lazy (callback) styles
+    debug(
+      message?: any | (() => { message?: string; [key: string]: any }),
+      extra?: Record<string, any>
+    ): void;
+    info(
+      message?: any | (() => { message?: string; [key: string]: any }),
+      extra?: Record<string, any>
+    ): void;
+    error(
+      message?: any | (() => { message?: string; [key: string]: any }),
+      extra?: Record<string, any>
+    ): void;
+    warn(
+      message?: any | (() => { message?: string; [key: string]: any }),
+      extra?: Record<string, any>
+    ): void;
 
     tag(key: string, value: string): Logger;
     clone(): Logger;
@@ -240,64 +247,64 @@ export namespace Log {
 
     const result: Logger = {
       debug(message?: any, extra?: Record<string, any>) {
-        if (shouldLog('DEBUG')) {
+        if (!shouldLog('DEBUG')) return;
+
+        // Check if message is a function (lazy logging)
+        if (typeof message === 'function') {
+          lazyLogInstance.debug(() => {
+            const data = message();
+            const { message: msg, ...extraData } = data;
+            output('DEBUG', msg, extraData);
+            return '';
+          });
+        } else {
           output('DEBUG', message, extra);
         }
       },
       info(message?: any, extra?: Record<string, any>) {
-        if (shouldLog('INFO')) {
+        if (!shouldLog('INFO')) return;
+
+        // Check if message is a function (lazy logging)
+        if (typeof message === 'function') {
+          lazyLogInstance.info(() => {
+            const data = message();
+            const { message: msg, ...extraData } = data;
+            output('INFO', msg, extraData);
+            return '';
+          });
+        } else {
           output('INFO', message, extra);
         }
       },
       error(message?: any, extra?: Record<string, any>) {
-        if (shouldLog('ERROR')) {
+        if (!shouldLog('ERROR')) return;
+
+        // Check if message is a function (lazy logging)
+        if (typeof message === 'function') {
+          lazyLogInstance.error(() => {
+            const data = message();
+            const { message: msg, ...extraData } = data;
+            output('ERROR', msg, extraData);
+            return '';
+          });
+        } else {
           output('ERROR', message, extra);
         }
       },
       warn(message?: any, extra?: Record<string, any>) {
-        if (shouldLog('WARN')) {
+        if (!shouldLog('WARN')) return;
+
+        // Check if message is a function (lazy logging)
+        if (typeof message === 'function') {
+          lazyLogInstance.warn(() => {
+            const data = message();
+            const { message: msg, ...extraData } = data;
+            output('WARN', msg, extraData);
+            return '';
+          });
+        } else {
           output('WARN', message, extra);
         }
-      },
-
-      // Lazy logging methods - functions only execute if level is enabled
-      lazy: {
-        debug(fn: () => { message?: string; [key: string]: any }) {
-          if (!shouldLog('DEBUG')) return;
-          lazyLogInstance.debug(() => {
-            const data = fn();
-            const { message, ...extra } = data;
-            output('DEBUG', message, extra);
-            return '';
-          });
-        },
-        info(fn: () => { message?: string; [key: string]: any }) {
-          if (!shouldLog('INFO')) return;
-          lazyLogInstance.info(() => {
-            const data = fn();
-            const { message, ...extra } = data;
-            output('INFO', message, extra);
-            return '';
-          });
-        },
-        error(fn: () => { message?: string; [key: string]: any }) {
-          if (!shouldLog('ERROR')) return;
-          lazyLogInstance.error(() => {
-            const data = fn();
-            const { message, ...extra } = data;
-            output('ERROR', message, extra);
-            return '';
-          });
-        },
-        warn(fn: () => { message?: string; [key: string]: any }) {
-          if (!shouldLog('WARN')) return;
-          lazyLogInstance.warn(() => {
-            const data = fn();
-            const { message, ...extra } = data;
-            output('WARN', message, extra);
-            return '';
-          });
-        },
       },
 
       tag(key: string, value: string) {

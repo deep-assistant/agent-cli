@@ -216,7 +216,7 @@ export namespace SessionPrompt {
   }
 
   export function cancel(sessionID: string) {
-    log.lazy.info(() => ({ message: 'cancel', sessionID }));
+    log.info(() => ({ message: 'cancel', sessionID }));
     const s = state();
     const match = s[sessionID];
     if (!match) return;
@@ -242,7 +242,7 @@ export namespace SessionPrompt {
 
     let step = 0;
     while (true) {
-      log.lazy.info(() => ({ message: 'loop', step, sessionID }));
+      log.info(() => ({ message: 'loop', step, sessionID }));
       if (abort.aborted) break;
       let msgs = await MessageV2.filterCompacted(MessageV2.stream(sessionID));
 
@@ -276,7 +276,7 @@ export namespace SessionPrompt {
         lastAssistant.finish !== 'tool-calls' &&
         lastUser.id < lastAssistant.id
       ) {
-        log.lazy.info(() => ({ message: 'exiting loop', sessionID }));
+        log.info(() => ({ message: 'exiting loop', sessionID }));
         break;
       }
 
@@ -297,7 +297,7 @@ export namespace SessionPrompt {
           lastUser.model.modelID
         );
       } catch (error) {
-        log.lazy.warn(() => ({
+        log.warn(() => ({
           message:
             'Failed to initialize specified model, falling back to default model',
           providerID: lastUser.model.providerID,
@@ -613,12 +613,12 @@ export namespace SessionPrompt {
       const result = await processor.process(() =>
         streamText({
           onError(error) {
-            log.lazy.error(() => ({ message: 'stream error', error }));
+            log.error(() => ({ message: 'stream error', error }));
           },
           async experimental_repairToolCall(input) {
             const lower = input.toolCall.toolName.toLowerCase();
             if (lower !== input.toolCall.toolName && tools[lower]) {
-              log.lazy.info(() => ({
+              log.info(() => ({
                 message: 'repairing tool call',
                 tool: input.toolCall.toolName,
                 repaired: lower,
@@ -970,7 +970,7 @@ export namespace SessionPrompt {
               }
               break;
             case 'file:':
-              log.lazy.info(() => ({ message: 'file', mime: part.mime }));
+              log.info(() => ({ message: 'file', mime: part.mime }));
               // have to normalize, symbol search returns absolute paths
               // Decode the pathname since URL constructor doesn't automatically decode it
               const filepath = fileURLToPath(part.url);
@@ -1037,7 +1037,7 @@ export namespace SessionPrompt {
                     );
                   })
                   .catch((error) => {
-                    log.lazy.error(() => ({
+                    log.error(() => ({
                       message: 'failed to read file',
                       error,
                     }));
@@ -1404,7 +1404,7 @@ export namespace SessionPrompt {
    */
 
   export async function command(input: CommandInput) {
-    log.lazy.info(() => ({ message: 'command', ...input }));
+    log.info(() => ({ message: 'command', ...input }));
     const command = await Command.get(input.command);
     const agentName = command.agent ?? input.agent ?? 'build';
 
@@ -1600,18 +1600,11 @@ export namespace SessionPrompt {
           });
       })
       .catch((error) => {
-<<<<<<< HEAD
-        log.lazy.error(() => ({
+        log.error(() => ({
           message: 'failed to generate title',
           error,
-          model: small.info.id,
-        }));
-=======
-        log.error('failed to generate title', {
-          error,
           model: small.info?.id ?? small.modelID,
-        });
->>>>>>> origin/main
+        }));
       });
   }
 }
