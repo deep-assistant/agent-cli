@@ -47,7 +47,9 @@ echo "hi" | agent
 
 ### Interactive Mode with Multiple Inputs
 
-The agent supports continuous multi-turn conversations in interactive terminal mode. When you run `agent` without piped input, it enters listening mode and accepts multiple messages sequentially, maintaining context across the conversation:
+The agent supports continuous multi-turn conversations in interactive terminal mode. When you run `agent` without piped input, it enters listening mode and accepts multiple messages sequentially, maintaining context across the conversation.
+
+**📖 For a complete interactive example with detailed explanations, see:** [examples/interactive-mode-multi-turn.md](../examples/interactive-mode-multi-turn.md)
 
 **Example Session:**
 
@@ -200,6 +202,8 @@ $ agent
 - Close your terminal
 
 This interactive mode makes it easy to have multi-turn conversations with the agent without needing to restart the process for each question.
+
+**💡 Tip:** For a more detailed breakdown of this example with comprehensive explanations of each feature, see the [Interactive Mode Multi-Turn Example](../examples/interactive-mode-multi-turn.md).
 
 ## CLI Flags
 
@@ -415,6 +419,8 @@ With `--compact-json`, status messages are output as single-line JSON:
 | `agent --compact-json`                        | All JSON output is single-line (NDJSON style)   |
 
 ## Examples
+
+For a comprehensive interactive terminal mode example with detailed explanations, see [examples/interactive-mode-multi-turn.md](../examples/interactive-mode-multi-turn.md).
 
 ### Programmatic Usage
 
