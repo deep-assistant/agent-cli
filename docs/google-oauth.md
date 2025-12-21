@@ -73,6 +73,8 @@ The following OAuth scopes are requested:
 - `https://www.googleapis.com/auth/cloud-platform`
 - `https://www.googleapis.com/auth/userinfo.email`
 - `https://www.googleapis.com/auth/userinfo.profile`
+- `https://www.googleapis.com/auth/generative-language.tuning`
+- `https://www.googleapis.com/auth/generative-language.retriever`
 
 ### Token Storage
 
@@ -84,7 +86,7 @@ OAuth tokens are stored in `~/.gemini/.credentials.json` with the following stru
   "refresh_token": "<refresh_token>",
   "expiry_date": <timestamp_ms>,
   "token_type": "Bearer",
-  "scope": "https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile"
+   "scope": "https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/generative-language.tuning https://www.googleapis.com/auth/generative-language.retriever"
 }
 ```
 
