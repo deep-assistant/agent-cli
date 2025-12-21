@@ -21,7 +21,9 @@ agent
 
 ## Complete Example Session
 
-Below is a real example of running `agent` in interactive terminal mode and having a multi-turn conversation:
+Below is a real example of running `agent` in interactive terminal mode and having a multi-turn conversation.
+
+**📄 Want to see the raw, unedited output?** Check out [interactive-mode-output.txt](./interactive-mode-output.txt) for the complete original terminal output without any modifications or explanations.
 
 ### Initial Status Message
 

@@ -51,6 +51,8 @@ The agent supports continuous multi-turn conversations in interactive terminal m
 
 **📖 For a complete interactive example with detailed explanations, see:** [examples/interactive-mode-multi-turn.md](../examples/interactive-mode-multi-turn.md)
 
+**📄 Want to see the raw terminal output?** Check out [examples/interactive-mode-output.txt](../examples/interactive-mode-output.txt) for the original unedited output
+
 **Example Session:**
 
 ```bash
@@ -421,6 +423,8 @@ With `--compact-json`, status messages are output as single-line JSON:
 ## Examples
 
 For a comprehensive interactive terminal mode example with detailed explanations, see [examples/interactive-mode-multi-turn.md](../examples/interactive-mode-multi-turn.md).
+
+For the original unedited terminal output, see [examples/interactive-mode-output.txt](../examples/interactive-mode-output.txt).
 
 ### Programmatic Usage
 
