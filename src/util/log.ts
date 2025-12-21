@@ -2,7 +2,20 @@ import path from 'path';
 import fs from 'fs/promises';
 import { Global } from '../global';
 import z from 'zod';
+import makeLog, { levels } from 'log-lazy';
+import { Flag } from '../flag/flag.ts';
 
+/**
+ * Logging module with JSON output and lazy evaluation support.
+ *
+ * Features:
+ * - JSON formatted output: All logs are wrapped in { log: { ... } } structure
+ * - Lazy evaluation: Use lazy() methods to defer expensive computations
+ * - Level control: Respects --verbose flag and log level settings
+ * - File logging: Writes to file when not in verbose/print mode
+ *
+ * The JSON format ensures all output is parsable, separating logs from regular output.
+ */
 export namespace Log {
   export const Level = z
     .enum(['DEBUG', 'INFO', 'WARN', 'ERROR'])
@@ -17,16 +30,34 @@ export namespace Log {
   };
 
   let level: Level = 'INFO';
+  let jsonOutput = false; // Whether to output JSON format (enabled in verbose mode)
 
   function shouldLog(input: Level): boolean {
     return levelPriority[input] >= levelPriority[level];
   }
 
+  /**
+   * Logger interface with support for both immediate and lazy logging.
+   *
+   * Lazy logging methods accept a function that returns the data to log.
+   * The function is only called if logging is enabled for that level,
+   * avoiding expensive computations when logs are disabled.
+   */
   export type Logger = {
+    // Immediate logging (existing API for backward compatibility)
     debug(message?: any, extra?: Record<string, any>): void;
     info(message?: any, extra?: Record<string, any>): void;
     error(message?: any, extra?: Record<string, any>): void;
     warn(message?: any, extra?: Record<string, any>): void;
+
+    // Lazy logging - functions are only executed if level is enabled
+    lazy: {
+      debug(fn: () => { message?: string; [key: string]: any }): void;
+      info(fn: () => { message?: string; [key: string]: any }): void;
+      error(fn: () => { message?: string; [key: string]: any }): void;
+      warn(fn: () => { message?: string; [key: string]: any }): void;
+    };
+
     tag(key: string, value: string): Logger;
     clone(): Logger;
     time(
@@ -54,24 +85,47 @@ export namespace Log {
   }
   let write = (msg: any) => Bun.stderr.write(msg);
 
+  // Initialize log-lazy for controlling lazy log execution
+  let lazyLogInstance = makeLog({ level: 0 }); // Start disabled
+
   export async function init(options: Options) {
     if (options.level) level = options.level;
     cleanup(Global.Path.log);
-    if (options.print) return;
-    logpath = path.join(
-      Global.Path.log,
-      options.dev
-        ? 'dev.log'
-        : new Date().toISOString().split('.')[0].replace(/:/g, '') + '.log'
-    );
-    const logfile = Bun.file(logpath);
-    await fs.truncate(logpath).catch(() => {});
-    const writer = logfile.writer();
-    write = async (msg: any) => {
-      const num = writer.write(msg);
-      writer.flush();
-      return num;
-    };
+
+    // Always use JSON output format for logs
+    jsonOutput = true;
+
+    // Configure lazy logging level based on verbose flag
+    if (Flag.OPENCODE_VERBOSE || options.print) {
+      // Enable all levels for lazy logging when verbose
+      lazyLogInstance = makeLog({
+        level: levels.debug | levels.info | levels.warn | levels.error,
+      });
+    } else {
+      // Disable lazy logging when not verbose
+      lazyLogInstance = makeLog({ level: 0 });
+    }
+
+    if (options.print) {
+      // In print mode, output to stderr
+      // No file logging needed
+    } else {
+      // In normal mode, write to file
+      logpath = path.join(
+        Global.Path.log,
+        options.dev
+          ? 'dev.log'
+          : new Date().toISOString().split('.')[0].replace(/:/g, '') + '.log'
+      );
+      const logfile = Bun.file(logpath);
+      await fs.truncate(logpath).catch(() => {});
+      const writer = logfile.writer();
+      write = async (msg: any) => {
+        const num = writer.write(msg);
+        writer.flush();
+        return num;
+      };
+    }
   }
 
   async function cleanup(dir: string) {
@@ -97,6 +151,43 @@ export namespace Log {
       : result;
   }
 
+  /**
+   * Format log entry as JSON object wrapped in { log: { ... } }
+   */
+  function formatJson(
+    logLevel: Level,
+    message: any,
+    tags: Record<string, any>,
+    extra?: Record<string, any>
+  ): string {
+    const timestamp = new Date().toISOString();
+    const logEntry: Record<string, any> = {
+      level: logLevel.toLowerCase(),
+      timestamp,
+      ...tags,
+      ...extra,
+    };
+
+    if (message !== undefined && message !== null) {
+      if (typeof message === 'string') {
+        logEntry.message = message;
+      } else if (message instanceof Error) {
+        logEntry.message = message.message;
+        logEntry.error = {
+          name: message.name,
+          message: message.message,
+          stack: message.stack,
+        };
+      } else if (typeof message === 'object') {
+        Object.assign(logEntry, message);
+      } else {
+        logEntry.message = String(message);
+      }
+    }
+
+    return JSON.stringify({ log: logEntry });
+  }
+
   let last = Date.now();
   export function create(tags?: Record<string, any>) {
     tags = tags || {};
@@ -109,7 +200,8 @@ export namespace Log {
       }
     }
 
-    function build(message: any, extra?: Record<string, any>) {
+    // Legacy format for file logging (backward compatibility)
+    function buildLegacy(message: any, extra?: Record<string, any>) {
       const prefix = Object.entries({
         ...tags,
         ...extra,
@@ -131,27 +223,83 @@ export namespace Log {
           .join(' ') + '\n'
       );
     }
+
+    // Choose output format based on jsonOutput flag
+    function output(
+      logLevel: Level,
+      message: any,
+      extra?: Record<string, any>
+    ) {
+      if (jsonOutput) {
+        // Use our custom JSON formatting for { log: { ... } } format
+        write(formatJson(logLevel, message, tags || {}, extra) + '\n');
+      } else {
+        write(logLevel.padEnd(5) + ' ' + buildLegacy(message, extra));
+      }
+    }
+
     const result: Logger = {
       debug(message?: any, extra?: Record<string, any>) {
         if (shouldLog('DEBUG')) {
-          write('DEBUG ' + build(message, extra));
+          output('DEBUG', message, extra);
         }
       },
       info(message?: any, extra?: Record<string, any>) {
         if (shouldLog('INFO')) {
-          write('INFO  ' + build(message, extra));
+          output('INFO', message, extra);
         }
       },
       error(message?: any, extra?: Record<string, any>) {
         if (shouldLog('ERROR')) {
-          write('ERROR ' + build(message, extra));
+          output('ERROR', message, extra);
         }
       },
       warn(message?: any, extra?: Record<string, any>) {
         if (shouldLog('WARN')) {
-          write('WARN  ' + build(message, extra));
+          output('WARN', message, extra);
         }
       },
+
+      // Lazy logging methods - functions only execute if level is enabled
+      lazy: {
+        debug(fn: () => { message?: string; [key: string]: any }) {
+          if (!shouldLog('DEBUG')) return;
+          lazyLogInstance.debug(() => {
+            const data = fn();
+            const { message, ...extra } = data;
+            output('DEBUG', message, extra);
+            return '';
+          });
+        },
+        info(fn: () => { message?: string; [key: string]: any }) {
+          if (!shouldLog('INFO')) return;
+          lazyLogInstance.info(() => {
+            const data = fn();
+            const { message, ...extra } = data;
+            output('INFO', message, extra);
+            return '';
+          });
+        },
+        error(fn: () => { message?: string; [key: string]: any }) {
+          if (!shouldLog('ERROR')) return;
+          lazyLogInstance.error(() => {
+            const data = fn();
+            const { message, ...extra } = data;
+            output('ERROR', message, extra);
+            return '';
+          });
+        },
+        warn(fn: () => { message?: string; [key: string]: any }) {
+          if (!shouldLog('WARN')) return;
+          lazyLogInstance.warn(() => {
+            const data = fn();
+            const { message, ...extra } = data;
+            output('WARN', message, extra);
+            return '';
+          });
+        },
+      },
+
       tag(key: string, value: string) {
         if (tags) tags[key] = value;
         return result;
@@ -183,5 +331,27 @@ export namespace Log {
     }
 
     return result;
+  }
+
+  /**
+   * Check if JSON output mode is enabled
+   */
+  export function isJsonOutput(): boolean {
+    return jsonOutput;
+  }
+
+  /**
+   * Sync lazy logging with verbose flag at runtime
+   * Call after Flag.setVerbose() to update lazy logging state
+   */
+  export function syncWithVerboseFlag(): void {
+    if (Flag.OPENCODE_VERBOSE) {
+      jsonOutput = true;
+      lazyLogInstance = makeLog({
+        level: levels.debug | levels.info | levels.warn | levels.error,
+      });
+    } else {
+      lazyLogInstance = makeLog({ level: 0 });
+    }
   }
 }
