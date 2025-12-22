@@ -1,3 +1,7 @@
+🧪 Running Issue #96 Integration Test...
+
+📋 Testing: Original failing command with echo model
+🔧 Command: echo "hi" | bun src/index.js --model link-assistant/echo --no-always-accept-stdin
 {
   "type": "status",
   "mode": "stdin-stream",
@@ -16,77 +20,50 @@
 }
 {
   "type": "step_start",
-  "timestamp": 1766432526367,
-  "sessionID": "ses_4b86aeb37ffeHebcjhSVF2nG9t",
+  "timestamp": 1766433074190,
+  "sessionID": "ses_4b8625ae5ffeOTvtPJb8W4LQAV",
   "part": {
-    "id": "prt_b4795501e0011VteCiy7D0r1Xm",
-    "sessionID": "ses_4b86aeb37ffeHebcjhSVF2nG9t",
-    "messageID": "msg_b4795158b001N17fGgjQCq8Mdn",
+    "id": "prt_b479dac020013diTb8KPCDc13K",
+    "sessionID": "ses_4b8625ae5ffeOTvtPJb8W4LQAV",
+    "messageID": "msg_b479da5d0001u1wR1yto702PQR",
     "type": "step-start",
-    "snapshot": "7bfce11c6d035958cf594c14939178480164507d"
-  }
-}
-{
-  "type": "tool_use",
-  "timestamp": 1766432528568,
-  "sessionID": "ses_4b86aeb37ffeHebcjhSVF2nG9t",
-  "part": {
-    "id": "prt_b47955809001XluTY8Bg7ms5sm",
-    "sessionID": "ses_4b86aeb37ffeHebcjhSVF2nG9t",
-    "messageID": "msg_b4795158b001N17fGgjQCq8Mdn",
-    "type": "tool",
-    "callID": "call_07ead47689a4424881e4a3db",
-    "tool": "webfetch",
-    "state": {
-      "status": "completed",
-      "input": {
-        "url": "https://github.com/link-assistant/agent/issues/96",
-        "format": "markdown"
-      },
-      "output": "                     undefined is not an object (evaluating 'Log.Default.lazy.info') · Issue #96 · link-assistant/agent · GitHub                                              \n\n[Skip to content](#start-of-content)  \n\n## Navigation Menu\n\nToggle navigation\n\n[](/)\n\n[Sign in](/login?return_to=https%3A%2F%2Fgithub.com%2Flink-assistant%2Fagent%2Fissues%2F96)\n\nAppearance settings\n\n \n\n-   Platform\n    \n    -   AI CODE CREATION\n        \n        -   [\n            \n            GitHub CopilotWrite better code with AI\n            \n            ](https://github.com/features/copilot)\n        -   [\n            \n            GitHub SparkBuild and deploy intelligent apps\n            \n            ](https://github.com/features/spark)\n        -   [\n            \n            GitHub ModelsManage and compare prompts\n            \n            ](https://github.com/features/models)\n        -   [\n            \n            MCP RegistryNewIntegrate external tools\n            \n            ](https://github.com/mcp)\n        \n    -   DEVELOPER WORKFLOWS\n        \n        -   [\n            \n            ActionsAutomate any workflow\n            \n            ](https://github.com/features/actions)\n        -   [\n            \n            CodespacesInstant dev environments\n            \n            ](https://github.com/features/codespaces)\n        -   [\n            \n            IssuesPlan and track work\n            \n            ](https://github.com/features/issues)\n        -   [\n            \n            Code ReviewManage code changes\n            \n            ](https://github.com/features/code-review)\n        \n    -   APPLICATION SECURITY\n        \n        -   [\n            \n            GitHub Advanced SecurityFind and fix vulnerabilities\n            \n            ](https://github.com/security/advanced-security)\n        -   [\n            \n            Code securitySecure your code as you build\n            \n            ](https://github.com/security/advanced-security/code-security)\n        -   [\n            \n            Secret protectionStop leaks before they start\n            \n            ](https://github.com/security/advanced-security/secret-protection)\n        \n    -   EXPLORE\n        \n        -   [Why GitHub](https://github.com/why-github)\n        -   [Documentation](https://docs.github.com)\n        -   [Blog](https://github.blog)\n        -   [Changelog](https://github.blog/changelog)\n        -   [Marketplace](https://github.com/marketplace)\n        \n    \n    [View all features](https://github.com/features)\n    \n-   Solutions\n    \n    -   BY COMPANY SIZE\n        \n        -   [Enterprises](https://github.com/enterprise)\n        -   [Small and medium teams](https://github.com/team)\n        -   [Startups](https://github.com/enterprise/startups)\n        -   [Nonprofits](https://github.com/solutions/industry/nonprofits)\n        \n    -   BY USE CASE\n        \n        -   [App Modernization](https://github.com/solutions/use-case/app-modernization)\n        -   [DevSecOps](https://github.com/solutions/use-case/devsecops)\n        -   [DevOps](https://github.com/solutions/use-case/devops)\n        -   [CI/CD](https://github.com/solutions/use-case/ci-cd)\n        -   [View all use cases](https://github.com/solutions/use-case)\n        \n    -   BY INDUSTRY\n        \n        -   [Healthcare](https://github.com/solutions/industry/healthcare)\n        -   [Financial services](https://github.com/solutions/industry/financial-services)\n        -   [Manufacturing](https://github.com/solutions/industry/manufacturing)\n        -   [Government](https://github.com/solutions/industry/government)\n        -   [View all industries](https://github.com/solutions/industry)\n        \n    \n    [View all solutions](https://github.com/solutions)\n    \n-   Resources\n    \n    -   EXPLORE BY TOPIC\n        \n        -   [AI](https://github.com/resources/articles?topic=ai)\n        -   [Software Development](https://github.com/resources/articles?topic=software-development)\n        -   [DevOps](https://github.com/resources/articles?topic=devops)\n        -   [Security](https://github.com/resources/articles?topic=security)\n        -   [View all topics](https://github.com/resources/articles)\n        \n    -   EXPLORE BY TYPE\n        \n        -   [Customer stories](https://github.com/customer-stories)\n        -   [Events & webinars](https://github.com/resources/events)\n        -   [Ebooks & reports](https://github.com/resources/whitepapers)\n        -   [Business insights](https://github.com/solutions/executive-insights)\n        -   [GitHub Skills](https://skills.github.com)\n        \n    -   SUPPORT & SERVICES\n        \n        -   [Documentation](https://docs.github.com)\n        -   [Customer support](https://support.github.com)\n        -   [Community forum](https://github.com/orgs/community/discussions)\n        -   [Trust center](https://github.com/trust-center)\n        -   [Partners](https://github.com/partners)\n        \n    \n-   Open Source\n    \n    -   COMMUNITY\n        \n        -   [\n            \n            GitHub SponsorsFund open source developers\n            \n            ](https://github.com/sponsors)\n        \n    -   PROGRAMS\n        \n        -   [Security Lab](https://securitylab.github.com)\n        -   [Maintainer Community](https://maintainers.github.com)\n        -   [Accelerator](https://github.com/accelerator)\n        -   [Archive Program](https://archiveprogram.github.com)\n        \n    -   REPOSITORIES\n        \n        -   [Topics](https://github.com/topics)\n        -   [Trending](https://github.com/trending)\n        -   [Collections](https://github.com/collections)\n        \n    \n-   Enterprise\n    \n    -   ENTERPRISE SOLUTIONS\n        \n        -   [\n            \n            Enterprise platformAI-powered developer platform\n            \n            ](https://github.com/enterprise)\n        \n    -   AVAILABLE ADD-ONS\n        \n        -   [\n            \n            GitHub Advanced SecurityEnterprise-grade security features\n            \n            ](https://github.com/security/advanced-security)\n        -   [\n            \n            Copilot for BusinessEnterprise-grade AI features\n            \n            ](https://github.com/features/copilot/copilot-business)\n        -   [\n            \n            Premium SupportEnterprise-grade 24/7 support\n            \n            ](https://github.com/premium-support)\n        \n    \n-   [Pricing](https://github.com/pricing)\n\nSearch or jump to...\n\n# Search code, repositories, users, issues, pull requests...\n\nSearch\n\nClear\n\n[Search syntax tips](https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax)\n\n# Provide feedback\n\nWe read every piece of feedback, and take your input very seriously.\n\n Include my email address so I can be contacted\n\nCancel Submit feedback\n\n# Saved searches\n\n## Use saved searches to filter your results more quickly\n\nName  \n\nQuery \n\nTo see all available qualifiers, see our [documentation](https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax).\n\nCancel Create saved search\n\n[Sign in](/login?return_to=https%3A%2F%2Fgithub.com%2Flink-assistant%2Fagent%2Fissues%2F96)\n\n[Sign up](/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E%2Fvoltron%2Fissues_fragments%2Fissue_layout&source=header-repo&source_repo=link-assistant%2Fagent)\n\nAppearance settings\n\nResetting focus\n\nYou signed in with another tab or window. Reload to refresh your session. You signed out in another tab or window. Reload to refresh your session. You switched accounts on another tab or window. Reload to refresh your session. Dismiss alert\n\n[link-assistant](/link-assistant) / **[agent](/link-assistant/agent)** Public\n\n-   [Notifications](/login?return_to=%2Flink-assistant%2Fagent) You must be signed in to change notification settings\n-   [Fork 1](/login?return_to=%2Flink-assistant%2Fagent)\n-   [Star 1](/login?return_to=%2Flink-assistant%2Fagent)\n    \n\n-   [Code](/link-assistant/agent)\n-   [Issues 5](/link-assistant/agent/issues)\n-   [Pull requests 3](/link-assistant/agent/pulls)\n-   [Actions](/link-assistant/agent/actions)\n-   [Projects 0](/link-assistant/agent/projects)\n-   [Security](/link-assistant/agent/security)\n    \n    [](/link-assistant/agent/security)\n    \n    [](/link-assistant/agent/security)\n    \n    [](/link-assistant/agent/security)\n    \n    [\n    \n    ### Uh oh!\n    \n    ](/link-assistant/agent/security)\n    \n    [There was an error while loading.](/link-assistant/agent/security) Please reload this page.\n    \n-   [Insights](/link-assistant/agent/pulse)\n\nAdditional navigation options\n\n-   [Code](/link-assistant/agent)\n-   [Issues](/link-assistant/agent/issues)\n-   [Pull requests](/link-assistant/agent/pulls)\n-   [Actions](/link-assistant/agent/actions)\n-   [Projects](/link-assistant/agent/projects)\n-   [Security](/link-assistant/agent/security)\n-   [Insights](/link-assistant/agent/pulse)\n\n# undefined is not an object (evaluating 'Log.Default.lazy.info') #96\n\n[New issue](/login?return_to=)\n\nCopy link\n\n[New issue](/login?return_to=)\n\nCopy link\n\nClosed\n\n[Bug](/link-assistant/agent/issues?q=type:\"Bug\")\n\n[#97](https://github.com/link-assistant/agent/pull/97)\n\nClosed\n\n[undefined is not an object (evaluating 'Log.Default.lazy.info')](#top)#96\n\nBug\n\n[#97](https://github.com/link-assistant/agent/pull/97)\n\nCopy link\n\nLabels\n\n[bugSomething isn't working](https://github.com/link-assistant/agent/issues?q=state%3Aopen%20label%3A%22bug%22)Something isn't working\n\n[![@konard](https://avatars.githubusercontent.com/u/1431904?u=eef2c91c80a671714d3fd8c08ef91b297840056b&v=4&size=80)](https://github.com/konard)\n\n## Description\n\n[![@konard](https://avatars.githubusercontent.com/u/1431904?u=eef2c91c80a671714d3fd8c08ef91b297840056b&v=4&size=48)](https://github.com/konard)\n\n[konard](https://github.com/konard)\n\nopened [on Dec 22, 2025](https://github.com/link-assistant/agent/issues/96#issue-3754913868)\n\nIssue body actions\n\n```\nroot@vmixxxx0:~# echo \"hi\" | agent --model opencode/gemini-3-pro\n{\n  \"type\": \"status\",\n  \"mode\": \"stdin-stream\",\n  \"message\": \"Agent CLI in continuous listening mode. Accepts JSON and plain text input.\",\n  \"hint\": \"Press CTRL+C to exit. Use --help for options.\",\n  \"acceptedFormats\": [\n    \"JSON object with \\\"message\\\" field\",\n    \"Plain text\"\n  ],\n  \"options\": {\n    \"interactive\": true,\n    \"autoMergeQueuedMessages\": true,\n    \"alwaysAcceptStdin\": true,\n    \"compactJson\": false\n  }\n}\nundefined is not an object (evaluating 'Log.Default.lazy.info')\nroot@vmixxxx0:~#\n```\n\nWe need double check all similar places, and make sure our logging work anywhere. Also we need to use our `--model link-assistant/echo` in CI/CD tests, to make sure it will be never regressed.\n\nPlease download all logs and data related about the issue to this repository, make sure we compile that data to `./docs/case-studies/issue-{id}` folder, and use it to do deep case study analysis (also make sure to search online for additional facts and data), in which we will reconstruct timeline/sequence of events, find root causes of the problem, and propose possible solutions.\n\n## Metadata\n\n## Metadata\n\n### Assignees\n\nNo one assigned\n\n### Labels\n\n[bugSomething isn't working](https://github.com/link-assistant/agent/issues?q=state%3Aopen%20label%3A%22bug%22)Something isn't working\n\n### Type\n\n[Bug](/link-assistant/agent/issues?q=type:\"Bug\")\n\n### Projects\n\nNo projects\n\n### Milestone\n\nNo milestone\n\n### Relationships\n\nNone yet\n\n### Development\n\nNo branches or pull requests\n\n## Issue actions\n\n## Footer\n\n[](https://github.com)© 2025 GitHub, Inc.\n\n### Footer navigation\n\n-   [Terms](https://docs.github.com/site-policy/github-terms/github-terms-of-service)\n-   [Privacy](https://docs.github.com/site-policy/privacy-policies/github-privacy-statement)\n-   [Security](https://github.com/security)\n-   [Status](https://www.githubstatus.com/)\n-   [Community](https://github.community/)\n-   [Docs](https://docs.github.com/)\n-   [Contact](https://support.github.com?tags=dotcom-footer)\n-   Manage cookies\n-   Do not share my personal information\n\nYou can’t perform that action at this time.",
-      "title": "https://github.com/link-assistant/agent/issues/96 (text/html; charset=utf-8)",
-      "metadata": {},
-      "time": {
-        "start": 1766432528398,
-        "end": 1766432528567
-      }
-    }
+    "snapshot": "e1b11ac4aeba0e0ef4366f832afea294553ecc4d"
   }
 }
 {
   "type": "text",
-  "timestamp": 1766432528646,
-  "sessionID": "ses_4b86aeb37ffeHebcjhSVF2nG9t",
+  "timestamp": 1766433075178,
+  "sessionID": "ses_4b8625ae5ffeOTvtPJb8W4LQAV",
   "part": {
-    "id": "prt_b4795509000135f2Mw40VR4nzA",
-    "sessionID": "ses_4b86aeb37ffeHebcjhSVF2nG9t",
-    "messageID": "msg_b4795158b001N17fGgjQCq8Mdn",
+    "id": "prt_b479dac5e001HM7fLLESUJuT82",
+    "sessionID": "ses_4b8625ae5ffeOTvtPJb8W4LQAV",
+    "messageID": "msg_b479da5d0001u1wR1yto702PQR",
     "type": "text",
-    "text": "\nI'm here to help you solve the GitHub issue #96. Let me first understand what this issue is about by examining the current state of the repository.",
+    "text": "\nHi! I see you have a GitHub issue to solve (issue #96) and I'm in a prepared working directory. Let me first understand what the current state is and what needs to be done.",
     "time": {
-      "start": 1766432528644,
-      "end": 1766432528644
+      "start": 1766433075177,
+      "end": 1766433075177
     }
   }
 }
 {
   "type": "step_finish",
-  "timestamp": 1766432528675,
-  "sessionID": "ses_4b86aeb37ffeHebcjhSVF2nG9t",
+  "timestamp": 1766433075208,
+  "sessionID": "ses_4b8625ae5ffeOTvtPJb8W4LQAV",
   "part": {
-    "id": "prt_b4795590a001S4aRlqyjsH4Y2k",
-    "sessionID": "ses_4b86aeb37ffeHebcjhSVF2nG9t",
-    "messageID": "msg_b4795158b001N17fGgjQCq8Mdn",
+    "id": "prt_b479daff1001VHssNYCQ0CEglm",
+    "sessionID": "ses_4b8625ae5ffeOTvtPJb8W4LQAV",
+    "messageID": "msg_b479da5d0001u1wR1yto702PQR",
     "type": "step-finish",
     "reason": "tool-calls",
-    "snapshot": "7bfce11c6d035958cf594c14939178480164507d",
+    "snapshot": "e1b11ac4aeba0e0ef4366f832afea294553ecc4d",
     "cost": 0,
     "tokens": {
       "input": 1,
-      "output": 68,
+      "output": 80,
       "reasoning": 0,
       "cache": {
-        "read": 12112,
+        "read": 12118,
         "write": 0
       }
     }
@@ -94,43 +71,43 @@
 }
 {
   "type": "step_start",
-  "timestamp": 1766432528763,
-  "sessionID": "ses_4b86aeb37ffeHebcjhSVF2nG9t",
+  "timestamp": 1766433075356,
+  "sessionID": "ses_4b8625ae5ffeOTvtPJb8W4LQAV",
   "part": {
-    "id": "prt_b4795597a001DRK5qWXEHFjztF",
-    "sessionID": "ses_4b86aeb37ffeHebcjhSVF2nG9t",
-    "messageID": "msg_b47955949001xHndQ7lJR4jZ5F",
+    "id": "prt_b479db099001J7IFyVDf2wpINb",
+    "sessionID": "ses_4b8625ae5ffeOTvtPJb8W4LQAV",
+    "messageID": "msg_b479db046001JrBxbquttATbJ3",
     "type": "step-start",
-    "snapshot": "7bfce11c6d035958cf594c14939178480164507d"
+    "snapshot": "e1b11ac4aeba0e0ef4366f832afea294553ecc4d"
   }
 }
 {
   "type": "text",
-  "timestamp": 1766432528765,
-  "sessionID": "ses_4b86aeb37ffeHebcjhSVF2nG9t",
+  "timestamp": 1766433075360,
+  "sessionID": "ses_4b8625ae5ffeOTvtPJb8W4LQAV",
   "part": {
-    "id": "prt_b4795597b0013I3hLWhSbmLm20",
-    "sessionID": "ses_4b86aeb37ffeHebcjhSVF2nG9t",
-    "messageID": "msg_b47955949001xHndQ7lJR4jZ5F",
+    "id": "prt_b479db09d001G4Pl42fUTZz6Ox",
+    "sessionID": "ses_4b8625ae5ffeOTvtPJb8W4LQAV",
+    "messageID": "msg_b479db046001JrBxbquttATbJ3",
     "type": "text",
     "text": "hi",
     "time": {
-      "start": 1766432528764,
-      "end": 1766432528764
+      "start": 1766433075359,
+      "end": 1766433075359
     }
   }
 }
 {
   "type": "step_finish",
-  "timestamp": 1766432528781,
-  "sessionID": "ses_4b86aeb37ffeHebcjhSVF2nG9t",
+  "timestamp": 1766433075372,
+  "sessionID": "ses_4b8625ae5ffeOTvtPJb8W4LQAV",
   "part": {
-    "id": "prt_b4795597d001ACSFwwXN8a5WWf",
-    "sessionID": "ses_4b86aeb37ffeHebcjhSVF2nG9t",
-    "messageID": "msg_b47955949001xHndQ7lJR4jZ5F",
+    "id": "prt_b479db0a0001t67OE9l8TGRGx6",
+    "sessionID": "ses_4b8625ae5ffeOTvtPJb8W4LQAV",
+    "messageID": "msg_b479db046001JrBxbquttATbJ3",
     "type": "step-finish",
     "reason": "stop",
-    "snapshot": "7bfce11c6d035958cf594c14939178480164507d",
+    "snapshot": "e1b11ac4aeba0e0ef4366f832afea294553ecc4d",
     "cost": 0,
     "tokens": {
       "input": 0,
@@ -143,3 +120,341 @@
     }
   }
 }
+✅ PASSED
+
+📋 Testing: Dry-run mode (originally failing)
+🔧 Command: echo "test" | bun src/index.js --model link-assistant/echo --dry-run --no-always-accept-stdin
+{
+  "type": "status",
+  "mode": "stdin-stream",
+  "message": "Agent CLI in single-message mode. Accepts JSON and plain text input.",
+  "hint": "Press CTRL+C to exit. Use --help for options.",
+  "acceptedFormats": [
+    "JSON object with \"message\" field",
+    "Plain text"
+  ],
+  "options": {
+    "interactive": true,
+    "autoMergeQueuedMessages": true,
+    "alwaysAcceptStdin": false,
+    "compactJson": false
+  }
+}
+{
+  "type": "step_start",
+  "timestamp": 1766433076438,
+  "sessionID": "ses_4b8624babffeylacBEi97bcawt",
+  "part": {
+    "id": "prt_b479db4d5001R6QVv2TshamNuY",
+    "sessionID": "ses_4b8624babffeylacBEi97bcawt",
+    "messageID": "msg_b479db487001HnH8wZIjvRMiTI",
+    "type": "step-start",
+    "snapshot": "e1b11ac4aeba0e0ef4366f832afea294553ecc4d"
+  }
+}
+{
+  "type": "text",
+  "timestamp": 1766433076441,
+  "sessionID": "ses_4b8624babffeylacBEi97bcawt",
+  "part": {
+    "id": "prt_b479db4d70011tq4h0WfhpZfXx",
+    "sessionID": "ses_4b8624babffeylacBEi97bcawt",
+    "messageID": "msg_b479db487001HnH8wZIjvRMiTI",
+    "type": "text",
+    "text": "test",
+    "time": {
+      "start": 1766433076441,
+      "end": 1766433076441
+    }
+  }
+}
+{
+  "type": "step_finish",
+  "timestamp": 1766433076454,
+  "sessionID": "ses_4b8624babffeylacBEi97bcawt",
+  "part": {
+    "id": "prt_b479db4db0019Cv3I2j1xxRERb",
+    "sessionID": "ses_4b8624babffeylacBEi97bcawt",
+    "messageID": "msg_b479db487001HnH8wZIjvRMiTI",
+    "type": "step-finish",
+    "reason": "stop",
+    "snapshot": "e1b11ac4aeba0e0ef4366f832afea294553ecc4d",
+    "cost": 0,
+    "tokens": {
+      "input": 0,
+      "output": 0,
+      "reasoning": 0,
+      "cache": {
+        "read": 0,
+        "write": 0
+      }
+    }
+  }
+}
+✅ PASSED
+
+📋 Testing: Verbose mode (triggers logging paths)
+🔧 Command: echo "verbose test" | bun src/index.js --model link-assistant/echo --verbose --no-always-accept-stdin 2>/dev/null
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{
+  "type": "step_start",
+  "timestamp": 1766433083124,
+  "sessionID": "ses_4b862485dffes7GPao02Hlf4Tl",
+  "part": {
+    "id": "prt_b479dcef2001F1xERVicmmr42z",
+    "sessionID": "ses_4b862485dffes7GPao02Hlf4Tl",
+    "messageID": "msg_b479db8760019hI9PgCt6a0Y49",
+    "type": "step-start",
+    "snapshot": "e1b11ac4aeba0e0ef4366f832afea294553ecc4d"
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{
+  "type": "text",
+  "timestamp": 1766433084123,
+  "sessionID": "ses_4b862485dffes7GPao02Hlf4Tl",
+  "part": {
+    "id": "prt_b479dcf75001TI6AUZx840QDFr",
+    "sessionID": "ses_4b862485dffes7GPao02Hlf4Tl",
+    "messageID": "msg_b479db8760019hI9PgCt6a0Y49",
+    "type": "text",
+    "text": "\nI'll run the verbose test to help diagnose the issue. Let me first check what test script is available and then run it with verbose output.",
+    "time": {
+      "start": 1766433084122,
+      "end": 1766433084122
+    }
+  }
+}
+
+
+{
+  "type": "step_finish",
+  "timestamp": 1766433084163,
+  "sessionID": "ses_4b862485dffes7GPao02Hlf4Tl",
+  "part": {
+    "id": "prt_b479dd2e7001p5mCPudXHjrZiN",
+    "sessionID": "ses_4b862485dffes7GPao02Hlf4Tl",
+    "messageID": "msg_b479db8760019hI9PgCt6a0Y49",
+    "type": "step-finish",
+    "reason": "tool-calls",
+    "snapshot": "e1b11ac4aeba0e0ef4366f832afea294553ecc4d",
+    "cost": 0,
+    "tokens": {
+      "input": 1,
+      "output": 61,
+      "reasoning": 0,
+      "cache": {
+        "read": 12119,
+        "write": 0
+      }
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{
+  "type": "step_start",
+  "timestamp": 1766433084344,
+  "sessionID": "ses_4b862485dffes7GPao02Hlf4Tl",
+  "part": {
+    "id": "prt_b479dd3b70018VIHW5ahoJbYTO",
+    "sessionID": "ses_4b862485dffes7GPao02Hlf4Tl",
+    "messageID": "msg_b479dd35e001HpDAO7KKUyg3tp",
+    "type": "step-start",
+    "snapshot": "e1b11ac4aeba0e0ef4366f832afea294553ecc4d"
+  }
+}
+
+
+
+{
+  "type": "text",
+  "timestamp": 1766433084346,
+  "sessionID": "ses_4b862485dffes7GPao02Hlf4Tl",
+  "part": {
+    "id": "prt_b479dd3b9001ybMsu1hy4gE4FK",
+    "sessionID": "ses_4b862485dffes7GPao02Hlf4Tl",
+    "messageID": "msg_b479dd35e001HpDAO7KKUyg3tp",
+    "type": "text",
+    "text": "verbose test",
+    "time": {
+      "start": 1766433084346,
+      "end": 1766433084346
+    }
+  }
+}
+
+
+{
+  "type": "step_finish",
+  "timestamp": 1766433084364,
+  "sessionID": "ses_4b862485dffes7GPao02Hlf4Tl",
+  "part": {
+    "id": "prt_b479dd3ba001sUPSYr5CADhqML",
+    "sessionID": "ses_4b862485dffes7GPao02Hlf4Tl",
+    "messageID": "msg_b479dd35e001HpDAO7KKUyg3tp",
+    "type": "step-finish",
+    "reason": "stop",
+    "snapshot": "e1b11ac4aeba0e0ef4366f832afea294553ecc4d",
+    "cost": 0,
+    "tokens": {
+      "input": 0,
+      "output": 0,
+      "reasoning": 0,
+      "cache": {
+        "read": 0,
+        "write": 0
+      }
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+✅ PASSED
+
+
+📊 Test Results:
+✅ Passed: 3
+❌ Failed: 0
+
+🎉 Issue #96 is completely resolved!
+✨ The Log.Default.lazy.info error has been fixed
