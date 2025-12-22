@@ -15,7 +15,6 @@ import {
 } from './json-standard/index.ts';
 import { McpCommand } from './cli/cmd/mcp.ts';
 import { AuthCommand } from './cli/cmd/auth.ts';
-import { StatsCommand } from './cli/cmd/stats.ts';
 import { Flag } from './flag/flag.ts';
 import { FormatError } from './cli/error.ts';
 import { UI } from './cli/ui.ts';
@@ -152,14 +151,6 @@ function outputStatus(status, compact = false) {
  * @returns {object} - { providerID, modelID }
  */
 async function parseModelConfig(argv) {
-  // In dry-run mode, always use the echo provider
-  if (Flag.OPENCODE_DRY_RUN) {
-    return {
-      providerID: 'link-assistant',
-      modelID: 'echo',
-    };
-  }
-
   // Parse model argument (handle model IDs with slashes like groq/qwen/qwen3-32b)
   const modelParts = argv.model.split('/');
   let providerID = modelParts[0] || 'opencode';
@@ -677,8 +668,6 @@ async function main() {
       .command(McpCommand)
       // Auth subcommand
       .command(AuthCommand)
-      // Stats subcommand
-      .command(StatsCommand)
       // Default command for agent mode (when no subcommand specified)
       .command({
         command: '$0',

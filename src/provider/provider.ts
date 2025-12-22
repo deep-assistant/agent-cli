@@ -928,9 +928,8 @@ export namespace Provider {
     const isSyntheticProvider =
       providerID === 'link-assistant' || providerID === 'link-assistant/cache';
 
-    // For synthetic providers, we don't need model info from the database
-    const info = isSyntheticProvider ? null : provider.info.models[modelID];
-    if (!isSyntheticProvider && !info)
+    const info = provider.info.models[modelID];
+    if (!info)
       throw new ModelNotFoundError({ providerID, modelID });
 
     try {

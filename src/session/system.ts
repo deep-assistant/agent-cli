@@ -26,6 +26,7 @@ export namespace SystemPrompt {
   }
 
   export function provider(modelID: string) {
+    if (modelID.includes('echo')) return []; // Echo model should not have system prompt
     if (modelID.includes('gpt-5')) return [PROMPT_CODEX];
     if (
       modelID.includes('gpt-') ||
