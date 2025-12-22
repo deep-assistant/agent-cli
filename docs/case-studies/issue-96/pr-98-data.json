@@ -38,18 +38,10 @@
   "merged_at": "2025-12-22T19:58:01Z",
   "merge_commit_sha": "474913547a17e380c86d9257470eb9e8a655ab3d",
   "assignee": null,
-  "assignees": [
-
-  ],
-  "requested_reviewers": [
-
-  ],
-  "requested_teams": [
-
-  ],
-  "labels": [
-
-  ],
+  "assignees": [],
+  "requested_reviewers": [],
+  "requested_teams": [],
+  "labels": [],
   "milestone": null,
   "draft": false,
   "commits_url": "https://api.github.com/repos/link-assistant/agent/pulls/98/commits",
@@ -182,9 +174,7 @@
       "allow_forking": true,
       "is_template": false,
       "web_commit_signoff_required": false,
-      "topics": [
-
-      ],
+      "topics": [],
       "visibility": "public",
       "forks": 1,
       "open_issues": 8,
@@ -317,9 +307,7 @@
       "allow_forking": true,
       "is_template": false,
       "web_commit_signoff_required": false,
-      "topics": [
-
-      ],
+      "topics": [],
       "visibility": "public",
       "forks": 1,
       "open_issues": 8,
