@@ -868,29 +868,124 @@ const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v2/userinfo';
 
 /**
+ * Get an available port for the OAuth callback server.
+ * Supports configurable port via OAUTH_CALLBACK_PORT or GOOGLE_OAUTH_CALLBACK_PORT
+ * environment variable. Falls back to automatic port discovery (port 0) if not configured.
+ *
+ * Based on Gemini CLI implementation:
+ * https://github.com/google-gemini/gemini-cli/blob/main/packages/core/src/code_assist/oauth2.ts
+ */
+async function getGoogleOAuthPort(): Promise<number> {
+  // Check for environment variable override (useful for containers/firewalls)
+  // Support both OAUTH_CALLBACK_PORT (Gemini CLI style) and GOOGLE_OAUTH_CALLBACK_PORT
+  const portStr =
+    process.env['OAUTH_CALLBACK_PORT'] ||
+    process.env['GOOGLE_OAUTH_CALLBACK_PORT'];
+  if (portStr) {
+    const port = parseInt(portStr, 10);
+    if (!isNaN(port) && port > 0 && port <= 65535) {
+      log.info(() => ({
+        message: 'using configured oauth callback port',
+        port,
+      }));
+      return port;
+    }
+    log.warn(() => ({
+      message: 'invalid OAUTH_CALLBACK_PORT, using auto discovery',
+      value: portStr,
+    }));
+  }
+
+  // Discover an available port by binding to port 0
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.listen(0, () => {
+      const address = server.address() as net.AddressInfo;
+      const port = address.port;
+      server.close(() => resolve(port));
+    });
+    server.on('error', reject);
+  });
+}
+
+/**
+ * Check if browser launch should be suppressed.
+ * When NO_BROWSER=true, use manual code entry flow instead of localhost redirect.
+ *
+ * Based on Gemini CLI's config.isBrowserLaunchSuppressed() functionality.
+ */
+function isBrowserSuppressed(): boolean {
+  const noBrowser = process.env['NO_BROWSER'];
+  return noBrowser === 'true' || noBrowser === '1';
+}
+
+/**
+ * Get the OAuth callback host for server binding.
+ * Defaults to 'localhost' but can be configured via OAUTH_CALLBACK_HOST.
+ * Use '0.0.0.0' in Docker containers to allow external connections.
+ */
+function getOAuthCallbackHost(): string {
+  return process.env['OAUTH_CALLBACK_HOST'] || 'localhost';
+}
+
+/**
+ * Google Code Assist redirect URI for manual code entry flow
+ * This is used when NO_BROWSER=true or in headless environments
+ * Based on Gemini CLI implementation
+ */
+const GOOGLE_CODEASSIST_REDIRECT_URI = 'https://codeassist.google.com/authcode';
+
+/**
  * Google OAuth Plugin
  * Supports:
- * - Google AI Pro/Ultra OAuth login
+ * - Google AI Pro/Ultra OAuth login (browser mode with localhost redirect)
+ * - Google AI Pro/Ultra OAuth login (manual code entry for NO_BROWSER mode)
  * - Manual API key entry
  *
  * Note: This plugin uses OAuth 2.0 with PKCE for Google AI subscription authentication.
  * After authenticating, you can use Gemini models with subscription benefits.
+ *
+ * The OAuth flow supports two modes:
+ * 1. Browser mode (default): Opens browser, uses localhost redirect server
+ * 2. Manual code entry (NO_BROWSER=true): Shows URL, user pastes authorization code
+ *
+ * Based on Gemini CLI implementation:
+ * https://github.com/google-gemini/gemini-cli/blob/main/packages/core/src/code_assist/oauth2.ts
  */
 const GooglePlugin: AuthPlugin = {
   provider: 'google',
   methods: [
     {
-      label: 'Google AI Pro/Ultra (OAuth)',
+      label: 'Google AI Pro/Ultra (OAuth - Browser)',
       type: 'oauth',
       async authorize() {
+        // Check if browser is suppressed - if so, recommend manual method
+        if (isBrowserSuppressed()) {
+          log.info(() => ({
+            message: 'NO_BROWSER is set, use manual code entry method instead',
+          }));
+        }
+
         const pkce = await generatePKCE();
         const state = generateRandomString(16);
 
-        // Start local server to handle OAuth redirect
+        // Get an available port BEFORE starting the server
+        // This fixes the race condition where port was 0 when building redirect URI
+        const serverPort = await getGoogleOAuthPort();
+        const host = getOAuthCallbackHost();
+        // The redirect URI sent to Google must use localhost (loopback IP)
+        // even if we bind to a different host (like 0.0.0.0 in Docker)
+        const redirectUri = `http://localhost:${serverPort}/oauth/callback`;
+
+        log.info(() => ({
+          message: 'starting google oauth server',
+          port: serverPort,
+          host,
+          redirectUri,
+        }));
+
+        // Create server to handle OAuth redirect
         const server = http.createServer();
-        let serverPort = 0;
-        let authCode: string | null = null;
-        let authState: string | null = null;
 
         const authPromise = new Promise<{ code: string; state: string }>(
           (resolve, reject) => {
@@ -944,12 +1039,22 @@ const GooglePlugin: AuthPlugin = {
               res.end('Missing code or state parameter');
             });
 
-            server.listen(0, () => {
-              const address = server.address() as net.AddressInfo;
-              serverPort = address.port;
+            // Listen on the configured host and pre-determined port
+            server.listen(serverPort, host, () => {
+              log.info(() => ({
+                message: 'google oauth server listening',
+                port: serverPort,
+                host,
+              }));
             });
 
-            server.on('error', reject);
+            server.on('error', (err) => {
+              log.error(() => ({
+                message: 'google oauth server error',
+                error: err,
+              }));
+              reject(err);
+            });
 
             // Timeout after 5 minutes
             setTimeout(
@@ -962,8 +1067,7 @@ const GooglePlugin: AuthPlugin = {
           }
         );
 
-        // Build authorization URL with local redirect URI
-        const redirectUri = `http://localhost:${serverPort}/oauth/callback`;
+        // Build authorization URL with the redirect URI
         const url = new URL(GOOGLE_AUTH_URL);
         url.searchParams.set('client_id', GOOGLE_OAUTH_CLIENT_ID);
         url.searchParams.set('redirect_uri', redirectUri);
@@ -1028,6 +1132,107 @@ const GooglePlugin: AuthPlugin = {
               };
             } catch (error) {
               log.error(() => ({ message: 'google oauth failed', error }));
+              return { type: 'failed' };
+            }
+          },
+        };
+      },
+    },
+    {
+      label: 'Google AI Pro/Ultra (OAuth - Manual Code Entry)',
+      type: 'oauth',
+      async authorize() {
+        /**
+         * Manual code entry flow for headless environments or when NO_BROWSER=true
+         * Uses Google's Code Assist redirect URI which displays the auth code to the user
+         *
+         * Based on Gemini CLI's authWithUserCode function:
+         * https://github.com/google-gemini/gemini-cli/blob/main/packages/core/src/code_assist/oauth2.ts
+         */
+        const pkce = await generatePKCE();
+        const state = generateRandomString(16);
+        const redirectUri = GOOGLE_CODEASSIST_REDIRECT_URI;
+
+        log.info(() => ({
+          message: 'using manual code entry oauth flow',
+          redirectUri,
+        }));
+
+        // Build authorization URL with the Code Assist redirect URI
+        const url = new URL(GOOGLE_AUTH_URL);
+        url.searchParams.set('client_id', GOOGLE_OAUTH_CLIENT_ID);
+        url.searchParams.set('redirect_uri', redirectUri);
+        url.searchParams.set('response_type', 'code');
+        url.searchParams.set('scope', GOOGLE_OAUTH_SCOPES.join(' '));
+        url.searchParams.set('access_type', 'offline');
+        url.searchParams.set('code_challenge', pkce.challenge);
+        url.searchParams.set('code_challenge_method', 'S256');
+        url.searchParams.set('state', state);
+        url.searchParams.set('prompt', 'consent');
+
+        return {
+          url: url.toString(),
+          instructions:
+            'Visit the URL above, complete authorization, then paste the authorization code here: ',
+          method: 'code' as const,
+          async callback(code?: string): Promise<AuthResult> {
+            if (!code) {
+              log.error(() => ({
+                message: 'google oauth no code provided',
+              }));
+              return { type: 'failed' };
+            }
+
+            try {
+              // Exchange authorization code for tokens
+              const tokenResult = await fetch(GOOGLE_TOKEN_URL, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                  code: code.trim(),
+                  client_id: GOOGLE_OAUTH_CLIENT_ID,
+                  client_secret: GOOGLE_OAUTH_CLIENT_SECRET,
+                  redirect_uri: redirectUri,
+                  grant_type: 'authorization_code',
+                  code_verifier: pkce.verifier,
+                }),
+              });
+
+              if (!tokenResult.ok) {
+                const errorText = await tokenResult.text();
+                log.error(() => ({
+                  message: 'google oauth token exchange failed',
+                  status: tokenResult.status,
+                  error: errorText,
+                }));
+                return { type: 'failed' };
+              }
+
+              const json = await tokenResult.json();
+              if (
+                !json.access_token ||
+                !json.refresh_token ||
+                typeof json.expires_in !== 'number'
+              ) {
+                log.error(() => ({
+                  message: 'google oauth token response missing fields',
+                }));
+                return { type: 'failed' };
+              }
+
+              return {
+                type: 'success',
+                refresh: json.refresh_token,
+                access: json.access_token,
+                expires: Date.now() + json.expires_in * 1000,
+              };
+            } catch (error) {
+              log.error(() => ({
+                message: 'google oauth manual code entry failed',
+                error,
+              }));
               return { type: 'failed' };
             }
           },
