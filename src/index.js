@@ -154,14 +154,21 @@ function outputStatus(status, compact = false) {
 async function parseModelConfig(argv) {
   // Parse model argument (handle model IDs with slashes like groq/qwen/qwen3-32b)
   let modelString = argv.model;
-  if (!modelString) {
-    // No model specified, use the default model (which may be echo in dry-run mode)
+  if (!modelString || Flag.OPENCODE_DRY_RUN) {
+    // No model specified, or dry-run mode, use the default model (which may be echo in dry-run mode)
+    const { Provider } = await import('./provider/provider.ts');
     const defaultModel = await Provider.defaultModel();
     modelString = `${defaultModel.providerID}/${defaultModel.modelID}`;
   }
   const modelParts = modelString.split('/');
   let providerID = modelParts[0];
   let modelID = modelParts.slice(1).join('/');
+
+  // In dry-run mode, override to use echo provider
+  if (Flag.OPENCODE_DRY_RUN) {
+    providerID = 'link-assistant';
+    modelID = 'echo';
+  }
 
   // Handle --use-existing-claude-oauth option
   // This reads OAuth credentials from ~/.claude/.credentials.json (Claude Code CLI)
