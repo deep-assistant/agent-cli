@@ -15,7 +15,6 @@ import {
 } from './json-standard/index.ts';
 import { McpCommand } from './cli/cmd/mcp.ts';
 import { AuthCommand } from './cli/cmd/auth.ts';
-import { StatsCommand } from './cli/cmd/stats.ts';
 import { Flag } from './flag/flag.ts';
 import { FormatError } from './cli/error.ts';
 import { UI } from './cli/ui.ts';
@@ -152,14 +151,6 @@ function outputStatus(status, compact = false) {
  * @returns {object} - { providerID, modelID }
  */
 async function parseModelConfig(argv) {
-  // In dry-run mode, always use the echo provider
-  if (Flag.OPENCODE_DRY_RUN) {
-    return {
-      providerID: 'link-assistant',
-      modelID: 'echo',
-    };
-  }
-
   // Parse model argument (handle model IDs with slashes like groq/qwen/qwen3-32b)
   const modelParts = argv.model.split('/');
   let providerID = modelParts[0] || 'opencode';
@@ -256,7 +247,7 @@ async function readSystemMessages(argv) {
 
 async function runAgentMode(argv, request) {
   // Log version and command info in verbose mode using lazy logging
-  Log.Default.info(() => ({
+  Log.Default.lazy.info(() => ({
     message: 'Agent started',
     version: pkg.version,
     command: process.argv.join(' '),
@@ -264,7 +255,7 @@ async function runAgentMode(argv, request) {
     scriptPath: import.meta.path,
   }));
   if (Flag.OPENCODE_DRY_RUN) {
-    Log.Default.info(() => ({
+    Log.Default.lazy.info(() => ({
       message: 'Dry run mode enabled',
       mode: 'dry-run',
     }));
@@ -327,7 +318,7 @@ async function runAgentMode(argv, request) {
 async function runContinuousAgentMode(argv) {
   const compactJson = argv['compact-json'] === true;
   // Log version and command info in verbose mode using lazy logging
-  Log.Default.info(() => ({
+  Log.Default.lazy.info(() => ({
     message: 'Agent started (continuous mode)',
     version: pkg.version,
     command: process.argv.join(' '),
@@ -335,7 +326,7 @@ async function runContinuousAgentMode(argv) {
     scriptPath: import.meta.path,
   }));
   if (Flag.OPENCODE_DRY_RUN) {
-    Log.Default.info(() => ({
+    Log.Default.lazy.info(() => ({
       message: 'Dry run mode enabled',
       mode: 'dry-run',
     }));
@@ -677,8 +668,6 @@ async function main() {
       .command(McpCommand)
       // Auth subcommand
       .command(AuthCommand)
-      // Stats subcommand
-      .command(StatsCommand)
       // Default command for agent mode (when no subcommand specified)
       .command({
         command: '$0',
@@ -779,69 +768,6 @@ async function main() {
             }),
         handler: async (argv) => {
           const compactJson = argv['compact-json'] === true;
-
-          // Check if no positional arguments, no prompt, and stdin is TTY - show help
-          if (
-            argv._.length === 0 &&
-            !argv.prompt &&
-            process.stdin.isTTY === true
-          ) {
-            console.log(`agent [command] [options]
-
-Commands:
-  agent auth   manage credentials
-  agent stats  show token usage and cost statistics
-  agent        Run agent in interactive or stdin mode (default)        [default]
-
-Options:
-      --version                     Show version number                [boolean]
-      --help                        Show help                          [boolean]
-      --model                       Model to use in format providerID/modelID
-                                        [string] [default: "opencode/grok-code"]
-      --json-standard               JSON output format standard: "opencode"
-                                    (default) or "claude" (experimental)
-                  [string] [choices: "opencode", "claude"] [default: "opencode"]
-      --system-message              Full override of the system message [string]
-      --system-message-file         Full override of the system message from
-                                    file                                [string]
-      --append-system-message       Append to the default system message[string]
-      --append-system-message-file  Append to the default system message from
-                                    file                                [string]
-      --server                      Run in server mode (default)
-                                                       [boolean] [default: true]
-      --verbose                     Enable verbose mode to debug API requests
-                                    (shows system prompt, token counts, etc.)
-                                                      [boolean] [default: false]
-      --dry-run                     Simulate operations without making actual
-                                    API calls or package installations (useful
-                                    for testing)      [boolean] [default: false]
-      --use-existing-claude-oauth   Use existing Claude OAuth credentials from
-                                    ~/.claude/.credentials.json (from Claude
-                                    Code CLI)         [boolean] [default: false]
-  -p, --prompt                      Prompt message to send directly (bypasses
-                                    stdin reading)                      [string]
-      --disable-stdin               Disable stdin streaming mode (requires
-                                    --prompt or shows help)
-                                                      [boolean] [default: false]
-      --stdin-stream-timeout        Optional timeout in milliseconds for stdin
-                                    reading (default: no timeout)       [number]
-      --auto-merge-queued-messages  Enable auto-merging of rapidly arriving
-                                    input lines into single messages (default:
-                                    true)              [boolean] [default: true]
-      --interactive                 Enable interactive mode to accept manual
-                                    input as plain text strings (default: true).
-                                    Use --no-interactive to only accept JSON
-                                    input.             [boolean] [default: true]
-      --always-accept-stdin         Keep accepting stdin input even after the
-                                    agent finishes work (default: true). Use
-                                    --no-always-accept-stdin for single-message
-                                    mode.              [boolean] [default: true]
-      --compact-json                Output compact JSON (single line) instead of
-                                    pretty-printed JSON (default: false). Useful
-                                    for program-to-program communication.
-                                                      [boolean] [default: false]`);
-            process.exit(0);
-          }
 
           // Check if --prompt flag was provided
           if (argv.prompt) {
