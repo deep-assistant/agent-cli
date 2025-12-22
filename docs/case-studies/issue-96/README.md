@@ -1,0 +1,223 @@
+# Case Study: Issue #96 - Undefined is not an object (evaluating 'Log.Default.lazy.info')
+
+## Issue Summary
+
+**Title:** undefined is not an object (evaluating 'Log.Default.lazy.info')
+**Issue URL:** https://github.com/link-assistant/agent/issues/96
+**Reporter:** @konard
+**Date:** 2025-12-22
+**Labels:** bug
+
+## Problem Description
+
+When running the agent CLI with a model, users encounter the following error:
+
+```
+$ echo "hi" | agent --model opencode/gemini-3-pro
+{
+  "type": "status",
+  "mode": "stdin-stream",
+  "message": "Agent CLI in continuous listening mode. Accepts JSON and plain text input.",
+  "hint": "Press CTRL+C to exit. Use --help for options.",
+  "acceptedFormats": [
+    "JSON object with \"message\" field",
+    "Plain text"
+  ],
+  "options": {
+    "interactive": true,
+    "autoMergeQueuedMessages": true,
+    "alwaysAcceptStdin": true,
+    "compactJson": false
+  }
+}
+undefined is not an object (evaluating 'Log.Default.lazy.info')
+```
+
+The error occurs immediately after the status message is displayed, preventing any further processing.
+
+## Root Cause Analysis
+
+### Investigation
+
+The error message indicates that `Log.Default.lazy` is `undefined`, and attempting to access `.info()` on it fails.
+
+### Code Location
+
+The problematic code is found in `src/index.js` at lines 250, 258, 321, and 329:
+
+**Line 250 (runAgentMode function):**
+
+```javascript
+Log.Default.lazy.info(() => ({
+  message: 'Agent started',
+  version: pkg.version,
+  command: process.argv.join(' '),
+  workingDirectory: process.cwd(),
+  scriptPath: import.meta.path,
+}));
+```
+
+**Line 258 (runAgentMode function):**
+
+```javascript
+if (Flag.OPENCODE_DRY_RUN) {
+  Log.Default.lazy.info(() => ({
+    message: 'Dry run mode enabled',
+    mode: 'dry-run',
+  }));
+}
+```
+
+**Line 321 (runContinuousAgentMode function):**
+
+```javascript
+Log.Default.lazy.info(() => ({
+  message: 'Agent started (continuous mode)',
+  version: pkg.version,
+  command: process.argv.join(' '),
+  workingDirectory: process.cwd(),
+  scriptPath: import.meta.path,
+}));
+```
+
+**Line 329 (runContinuousAgentMode function):**
+
+```javascript
+if (Flag.OPENCODE_DRY_RUN) {
+  Log.Default.lazy.info(() => ({
+    message: 'Dry run mode enabled',
+    mode: 'dry-run',
+  }));
+}
+```
+
+### Root Cause
+
+The `Log.Default` object does NOT have a `.lazy` property. Looking at `src/util/log.ts`:
+
+1. **Log.Default** is created at line 81: `export const Default = create({ service: 'default' });`
+2. The `Logger` type (lines 49-77) defines methods: `debug()`, `info()`, `warn()`, `error()`, `tag()`, `clone()`, `time()`
+3. **There is no `.lazy` property** defined on the Logger type or the returned logger object
+
+The lazy logging functionality is already built into the logging methods themselves. Looking at lines 264-278:
+
+```typescript
+info(message?: any, extra?: Record<string, any>) {
+  if (!shouldLog('INFO')) return;
+
+  // Check if message is a function (lazy logging)
+  if (typeof message === 'function') {
+    lazyLogInstance.info(() => {
+      const data = message();
+      const { message: msg, ...extraData } = data;
+      output('INFO', msg, extraData);
+      return '';
+    });
+  } else {
+    output('INFO', message, extra);
+  }
+}
+```
+
+The Logger's `info()` method (and other log methods) directly accepts callback functions for lazy evaluation. The `.lazy` intermediate property was never implemented.
+
+### Correct Usage Pattern
+
+The code should use:
+
+```javascript
+Log.Default.info(() => ({ message: 'Agent started', ... }))
+```
+
+Instead of:
+
+```javascript
+Log.Default.lazy.info(() => ({ message: 'Agent started', ... }))
+```
+
+## Reference Implementations
+
+### Existing Correct Usage in Codebase
+
+**src/util/eventloop.ts (line 11):**
+
+```typescript
+Log.Default.info('eventloop', { active });
+```
+
+**src/project/bootstrap.ts (line 12):**
+
+```typescript
+Log.Default.info('bootstrapping', { directory: Instance.directory });
+```
+
+**src/project/instance.ts (lines 23, 59, 63):**
+
+```typescript
+Log.Default.info('creating instance', { directory: input.directory });
+Log.Default.info('disposing instance', { directory: Instance.directory });
+Log.Default.info('disposing all instances');
+```
+
+**src/provider/echo.ts (lines 68, 95):**
+
+```typescript
+log.info('echo generate', { modelId, echoText });
+log.info('echo stream', { modelId, echoText });
+```
+
+### Alternative: Standalone Lazy Logger (src/util/log-lazy.ts)
+
+A separate lazy logging module exists but is NOT what `Log.Default` uses:
+
+```typescript
+import { lazyLog } from './util/log-lazy.ts';
+
+lazyLog.info(() => 'message');
+lazyLog.debug(() => ({ action: 'fetch', url: someUrl }));
+```
+
+This is an alternative implementation for explicit lazy-only logging, but is independent from `Log.Default`.
+
+## Solution
+
+### Before (Broken)
+
+```javascript
+Log.Default.lazy.info(() => ({
+  message: 'Agent started',
+  version: pkg.version,
+  // ...
+}));
+```
+
+### After (Fixed)
+
+```javascript
+Log.Default.info(() => ({
+  message: 'Agent started',
+  version: pkg.version,
+  // ...
+}));
+```
+
+Simply remove `.lazy` from all four occurrences since the lazy evaluation is already built into the `Log.Default.info()` method.
+
+## Timeline
+
+1. **2025-12-22:** Issue reported by @konard
+2. **2025-12-22:** Root cause identified - non-existent `.lazy` property on `Log.Default`
+3. **2025-12-22:** Fix implemented - removed `.lazy` from all four occurrences
+
+## Lessons Learned
+
+1. **API Documentation:** When implementing logging utilities, clearly document the available methods and their signatures
+2. **Type Safety:** TypeScript types for `Logger` correctly showed that `.lazy` wasn't a property, but JavaScript usage didn't catch the error
+3. **Testing:** The logging code paths weren't covered by existing tests, allowing this bug to slip through
+4. **Code Review:** Changes to shared utilities (logging) should be carefully reviewed for API compatibility
+
+## Prevention
+
+1. **Add Unit Test:** Add a test to verify `Log.Default.info()` accepts callback functions for lazy evaluation
+2. **CI/CD Test:** Use `--model link-assistant/echo` in CI/CD tests to catch similar runtime errors without incurring API costs
+3. **Type Checking:** Ensure TypeScript is run during the build process to catch undefined property access
