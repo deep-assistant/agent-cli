@@ -18,7 +18,6 @@ import { AuthCommand } from './cli/cmd/auth.ts';
 import { Flag } from './flag/flag.ts';
 import { FormatError } from './cli/error.ts';
 import { UI } from './cli/ui.ts';
-import { Provider } from './provider/provider.ts';
 import {
   runContinuousServerMode,
   runContinuousDirectMode,
@@ -691,7 +690,6 @@ async function main() {
             .option('model', {
               type: 'string',
               description: 'Model to use in format providerID/modelID',
-              default: 'opencode/grok-code',
             })
             .option('json-standard', {
               type: 'string',
