@@ -179,25 +179,15 @@ After implementing fallback, also update the OAuth scopes to reduce the likeliho
 
 ### Changes Made
 
-#### 1. Added All Required Generative Language Scopes (`src/auth/plugins.ts`)
+#### Key Insight: OAuth Client Scope Limitations
 
-Updated `GOOGLE_OAUTH_SCOPES` to include all scopes mentioned in the API's WWW-Authenticate header:
+The generative-language scopes cannot simply be added to the OAuth flow because:
 
-```typescript
-const GOOGLE_OAUTH_SCOPES = [
-  'https://www.googleapis.com/auth/cloud-platform',
-  'https://www.googleapis.com/auth/userinfo.email',
-  'https://www.googleapis.com/auth/userinfo.profile',
-  // Add generative-language scopes for Gemini API access
-  'https://www.googleapis.com/auth/generative-language',
-  'https://www.googleapis.com/auth/generative-language.tuning',
-  'https://www.googleapis.com/auth/generative-language.tuning.readonly',
-  'https://www.googleapis.com/auth/generative-language.retriever',
-  'https://www.googleapis.com/auth/generative-language.retriever.readonly',
-];
-```
+1. The Gemini CLI OAuth client (`681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j`) only has certain scopes registered
+2. Attempting to request unregistered scopes causes a `403: restricted_client` error (see issue #93)
+3. Therefore, the solution is NOT to add more scopes, but to fall back to API key authentication
 
-#### 2. Added Fallback to API Key on OAuth Scope Errors (`src/auth/plugins.ts`)
+#### Implemented Solution: Fallback to API Key on OAuth Scope Errors (`src/auth/plugins.ts`)
 
 In the Google OAuth loader, added logic to:
 
@@ -227,13 +217,12 @@ if (isScopeError(oauthResponse)) {
 
 ### How to Test
 
-1. **New users**: After updating, run `agent auth login` and select Google. The new OAuth flow will request all required scopes.
+1. **Users with OAuth + API key**: Set `GOOGLE_GENERATIVE_AI_API_KEY` or `GEMINI_API_KEY` environment variable. When OAuth fails with scope error, it will automatically fall back to the API key.
 
-2. **Existing users with scope errors**: If you have both OAuth and an API key, the system will automatically fall back to the API key.
-
-3. **Manual verification**: Check the logs for messages like:
+2. **Manual verification**: Check the logs for messages like:
    - `using google oauth credentials` - OAuth being used
    - `oauth scope error, falling back to api key authentication` - Fallback triggered
+   - `oauth scope error and no api key fallback available` - No fallback available (user needs to set API key)
 
 ## References
 

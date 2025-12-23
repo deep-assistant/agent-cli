@@ -855,17 +855,13 @@ const GOOGLE_OAUTH_CLIENT_ID =
   '681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com';
 const GOOGLE_OAUTH_CLIENT_SECRET = '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';
 const GOOGLE_OAUTH_SCOPES = [
+  // Note: We intentionally do NOT include generative-language.* scopes here
+  // because they are not registered for the Gemini CLI OAuth client (see issue #93).
+  // Instead, we rely on the fallback mechanism to use API keys when OAuth fails
+  // with scope errors (see issue #100).
   'https://www.googleapis.com/auth/cloud-platform',
   'https://www.googleapis.com/auth/userinfo.email',
   'https://www.googleapis.com/auth/userinfo.profile',
-  // Add generative-language scopes for Gemini API access
-  // These are required by generativelanguage.googleapis.com for StreamGenerateContent
-  // See: https://github.com/link-assistant/agent/issues/100
-  'https://www.googleapis.com/auth/generative-language',
-  'https://www.googleapis.com/auth/generative-language.tuning',
-  'https://www.googleapis.com/auth/generative-language.tuning.readonly',
-  'https://www.googleapis.com/auth/generative-language.retriever',
-  'https://www.googleapis.com/auth/generative-language.retriever.readonly',
 ];
 
 // Google OAuth endpoints
