@@ -26,6 +26,7 @@ import { createRequire } from 'module';
 import { readFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
+import stripAnsi from 'strip-ansi';
 
 const require = createRequire(import.meta.url);
 let pkg;
@@ -959,8 +960,8 @@ async function main() {
 
         // Handle validation errors (msg without err)
         if (msg) {
-          console.error(msg);
-          console.error(`\n${yargs.help()}`);
+          console.log(stripAnsi(msg));
+          console.log(`\n${stripAnsi(yargs.help())}`);
           process.exit(1);
         }
       })
